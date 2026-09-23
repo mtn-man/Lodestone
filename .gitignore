@@ -12,6 +12,6 @@ xcuserdata/
 *.xcscmblueprint
 *.xccheckout
 
-# Safari Web Extension packager output (generated, not hand-edited)
-*.xcodeproj/
-*.xcworkspace/
+# Xcode project bundle IS committed (project.pbxproj etc.) so others can
+# build their own copy -- only the per-user/generated noise inside it is
+# ignored, already covered by xcuserdata/ above.
