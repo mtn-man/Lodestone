@@ -1,6 +1,9 @@
 # macOS
 .DS_Store
 
+# Node (no dependencies planned, but defensive)
+node_modules/
+
 # Xcode
 build/
 DerivedData/
