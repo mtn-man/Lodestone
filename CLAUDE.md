@@ -4,9 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working in this
 
 ## What this is
 
-Lodestone is a planned Safari Web Extension: intercept a clicked (or right-clicked) `magnet:` link in Safari and forward it to a remote Transmission daemon over its JSON-RPC endpoint, instead of letting Safari try to hand it to a local torrent client. Personal, open-source tool -- no App Store distribution planned.
+Lodestone is a Safari Web Extension: intercept a clicked (or right-clicked) `magnet:` link in Safari and forward it to a remote Transmission daemon over its JSON-RPC endpoint, instead of letting Safari try to hand it to a local torrent client. Personal, open-source tool -- no App Store distribution planned.
 
-**Status: idea stage.** Design thinking captured below, no code or project scaffolding yet.
+**Status: extension scaffold implemented and validated in Safari.** The `extension/` source (manifest, background/content scripts, options page, ported Transmission RPC client, magnet-link validation, Node unit tests) is committed and was confirmed working end-to-end against a real Transmission daemon via Safari's temporary-extension dev-mode loading (Safari Settings > Developer > "Add Temporary Extension...") -- both click-to-add and right-click-to-add work. See `README.md` for build/install/usage details and known limitations.
+
+**Next step:** package and sign via Xcode (`xcrun safari-web-extension-packager`) for a persistent, non-temporary install -- not yet done as of this writing.
 
 ## Why this exists
 
@@ -24,11 +26,11 @@ This is a companion project to **magnetfwd** (`~/dev/golang/magnetfwd`), a small
 - **Personal-scale scope.** No web UI, no settings sync, no telemetry. A single remote Transmission host + optional auth, entered once, is the entire configuration surface -- this mirrors magnetfwd's `transmission_host` / `transmission_auth` config keys, and reusing that naming in whatever config storage the extension ends up using (likely `browser.storage.local`) would keep the two projects legible as a pair.
 - **Small and single-purpose.** Resist scope creep toward a general Transmission remote-control UI (that space is already served by transgui, transmission-remote-mac, etc.) -- Lodestone's entire job is "click magnet link -> add to remote host," nothing more.
 
-## Expected tech stack (not yet started)
+## Tech stack
 
-- **Extension logic**: HTML/CSS/JavaScript via the WebExtensions API (`manifest.json`, background script, `contextMenus` and/or a content script watching for `magnet:` links) -- the same model Chrome/Firefox extensions use, not Swift.
-- **Packaging**: Safari requires the extension to ship inside a thin native macOS app container for signing/loading. Apple's `xcrun safari-web-extension-packager` generates that wrapper (and an Xcode project) from a plain JS extension folder -- expect to use the generated template as-is rather than hand-writing Swift.
-- **RPC**: `fetch()` against Transmission's `/transmission/rpc` JSON-RPC endpoint, including the `X-Transmission-Session-Id` CSRF handshake (409 response -> retry with refreshed session ID) -- the same handshake magnetfwd's `internal/transmission/client.go` implements in Go; port the logic, not the code.
+- **Extension logic**: HTML/CSS/JavaScript via the WebExtensions API (`extension/manifest.json`, `background.js`, `content.js`, `contextMenus` plus a content script watching for `magnet:` links) -- the same model Chrome/Firefox extensions use, not Swift. Implemented in `extension/`.
+- **Packaging**: Safari requires the extension to ship inside a thin native macOS app container for signing/loading. Apple's `xcrun safari-web-extension-packager` generates that wrapper (and an Xcode project) from the plain JS extension folder -- use the generated template as-is rather than hand-writing Swift. Not yet run; see "Next step" above.
+- **RPC**: `fetch()` against Transmission's `/transmission/rpc` JSON-RPC endpoint, including the `X-Transmission-Session-Id` CSRF handshake (409 response -> retry with refreshed session ID) -- the same handshake magnetfwd's `internal/transmission/client.go` implements in Go, ported (not shared) as `extension/lib/transmission-client.js`.
 
 ## Naming
 
