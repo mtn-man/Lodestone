@@ -1,80 +1,68 @@
 # Lodestone
 
-Lodestone -- forward magnet links to a remote Transmission daemon.
+Safari Web Extension: forwards clicked/right-clicked `magnet:` links to a remote Transmission daemon's JSON-RPC endpoint (`/transmission/rpc`).
 
-(Named independently of, and unrelated to, Final Fantasy XIV's official "Lodestone" web service, which is a common search result for the name.)
-
-## What it does
-
-Lodestone is a Safari Web Extension. It watches for a clicked or right-clicked `magnet:` link and forwards it to a remote Transmission daemon's JSON-RPC endpoint (`/transmission/rpc`), instead of letting Safari try to hand the link to a local torrent client.
-
-## Status / scope
-
-Personal, open-source tool -- no App Store distribution. Self-signed locally via Xcode with a free Apple ID; anyone else who wants it builds and signs their own copy. It is deliberately small and single-purpose: click a magnet link, add it to one configured remote host, nothing more. It is not a general Transmission remote-control UI -- see `transgui` or `transmission-remote-mac` for that.
+Personal tool, no App Store distribution -- self-signed locally via a free Apple ID. Add-only; not a Transmission control UI.
 
 ## Requirements
 
-- macOS with Xcode installed (for the packaging step and to build/sign the app).
-- Safari 16.4+ (Manifest V3 extension support).
-- A reachable Transmission daemon with RPC enabled.
+- macOS + Xcode (packaging/signing)
+- Safari 16.4+ (Manifest V3)
+- Reachable Transmission daemon with RPC enabled
 
-## Building & installing
-
-1. Clone this repo.
-2. Run Apple's packager against the `extension/` folder to generate the native app wrapper and Xcode project:
-   ```
-   xcrun safari-web-extension-packager extension --project-location . --bundle-identifier com.<you>.Lodestone
-   ```
-   Flags can drift across Xcode versions -- check `xcrun safari-web-extension-packager --help` if the above doesn't match what you have installed.
-3. Open the generated `.xcodeproj`, set the signing team to your personal (free) Apple ID team, and build & run once to register the extension with Safari.
-4. Enable the extension in Safari Settings > Extensions. If it's an unnotarized local build, you'll also need "Allow Unsigned Extensions" in Safari's Develop menu.
-
-## Configuring
-
-Open the extension's options page and enter:
-- **Transmission host** (`host:port`), e.g. `192.168.1.50:9091`
-- **Auth** (`user:pass`), optional, only if RPC auth is enabled on your Transmission daemon
-
-On save, Safari will prompt for permission to reach that specific host -- this is a one-time, per-host permission (not a blanket "access all sites" grant), requested only for the host you actually configured.
-
-## Usage
-
-Click a magnet link, or right-click one and choose "Add magnet to Transmission." The toolbar icon shows a green "OK" or red "ERR" badge; hover it for error detail on failure.
-
-## Development
+## Build
 
 ```
-extension/     -- the plain WebExtension source, fed directly into the Xcode packager
+xcrun safari-web-extension-packager extension --project-location . --bundle-identifier com.<you>.Lodestone
+```
+
+Open the generated `Lodestone.xcodeproj`, set the signing team on **both** targets (app + extension) to the same free-tier team, signing certificate **Development** (not "Sign to Run Locally" -- ad-hoc signing breaks local network access). Build & run to register with Safari, then enable it in Safari Settings > Extensions. Unnotarized local build also needs "Allow Unsigned Extensions" in the Develop menu.
+
+For quick iteration without Xcode: Safari Settings > Developer > Add Temporary Extension -> point at `extension/`. Session-only, no signing.
+
+## Configure
+
+Extension options page: `transmission_host` (`host:port`), optional `transmission_auth` (`user:pass`). Save triggers a one-time per-host permission prompt (dynamic `optional_host_permissions`, not a blanket grant).
+
+## Layout
+
+```
+extension/
   manifest.json
-  background.js
-  content.js
-  options.html
-  options.js
+  background.js            -- message/contextMenu routing, badge feedback, opens options on icon click
+  content.js               -- intercepts magnet: link clicks
+  options.html / options.js
   lib/
-    magnet.js               -- magnet: URI parsing/validation
-    transmission-client.js  -- Transmission JSON-RPC client (CSRF handshake, basic auth)
-tests/         -- Node-only unit tests for extension/lib/*.js, not shipped in the extension
+    magnet.js              -- magnet: URI parsing/validation
+    transmission-client.js -- RPC client (CSRF handshake, basic auth, 10s timeout)
+    icons/
+tests/                     -- node --test coverage for lib/*.js
+design/
+  icon.svg + generate-icons.sh
+Lodestone/                 -- generated Xcode project (packager output; committed so others can build)
 ```
 
-Run tests with:
+## Dev
+
 ```
 npm test
 ```
 
-No build step, no bundler, no npm dependencies for the extension itself -- `extension/` is loaded by Safari as-is.
+No build step, no bundler, no deps for the extension itself -- `extension/` loads as-is.
 
-## Known limitations / non-goals
+## Gotchas
 
-- No general Transmission control UI -- add-only.
-- No `notifications` permission -- feedback is a toolbar badge only.
-- Icon is a simple generated placeholder (horseshoe magnet), not a bespoke design -- edit `design/icon.svg` and run `design/generate-icons.sh` to regenerate it everywhere (app icon, extension icon, status window) if you want something custom. **If you touch the background color: avoid very-dark/near-black values.** We hit a real, reproducible Safari bug where a background of `#0d0d0f` made Safari silently fail to load the extension's `icons`/`action.default_icon` manifest entries (log shows "Failed to load images in `icons` manifest entry" with no other explanation) -- both the toolbar icon and the Extensions-settings icon rendered totally blank, while the same PNGs displayed fine everywhere else (Dock, status window). Isolated via a branch-based bisection: format (RGBA vs palette), icon sizes, and rotation all turned out to be irrelevant -- only the specific background color mattered. `#141416` works; `#1c3a5e` (the original navy) works; `#0d0d0f` does not. Exact threshold unknown -- stay clearly clear of true black if you change this.
-- The badge-clear timer is best-effort: if Safari suspends the background page before the timer fires, the badge persists until the next event resets it.
-- The right-click menu item ("Add magnet to Transmission") appears on every link, not just magnet ones -- Safari rejects `magnet:*` as an invalid `targetUrlPatterns` value (the WebExtensions match-pattern grammar requires a `scheme://host/path` shape, which the non-hierarchical `magnet:` scheme can't satisfy). Clicking it on a non-magnet link just produces the normal "not a magnet URI" error.
+- `contextMenus.create({targetUrlPatterns: ['magnet:*']})` is rejected -- match-pattern grammar requires `scheme://host/path`, which `magnet:` (no host) can't satisfy. Context menu item shows on all links; click-through still validates and errors cleanly on non-magnet links.
+- `permissions.request()` must run synchronously off the triggering event (no `await` before it) or Safari silently drops the user-gesture association and never prompts.
+- Match patterns can't encode a port -- host permission is granted per-hostname, `fetch()` still uses the real host:port.
+- Icon background can't be near-black: `#0d0d0f` makes Safari silently fail to load `icons`/`action.default_icon` (blank toolbar + Extensions-pane icon, everywhere else fine); `#141416` works. No known root cause, just avoid true-black-ish values.
+- No `notifications` permission -- feedback is a toolbar badge (green OK / red ERR, tooltip has error detail).
+- App/plugin icon caches (LaunchServices, `pluginkit`, Safari's own extension state) are independent and go stale separately -- if an icon change doesn't show up, don't assume it's a real bug before re-registering/restarting each layer.
 
-## Relationship to magnetfwd
+## Companion: mintmedia
 
-Lodestone is a companion project to `magnetfwd`, a small Go daemon that polls the macOS clipboard for magnet links and forwards them to Transmission. magnetfwd catches magnet URIs copied as plain text; Lodestone catches magnet URIs that appear as an actual clickable link in Safari. Different trigger, same destination, same underlying protocol -- deliberately not merged (different languages, different OS integration points), but the config keys (`transmission_host` / `transmission_auth`) are named the same on purpose to keep the two projects legible as a pair.
+[github.com/mtn-man/mintmedia](https://github.com/mtn-man/mintmedia) handles the next stage -- managing the download -> sorted library layer. Not merged; separate concern.
 
 ## License
 
-Not yet decided.
+MIT -- see [LICENSE.txt](LICENSE.txt).

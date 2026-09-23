@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working in this
 
 Lodestone is a Safari Web Extension: intercept a clicked (or right-clicked) `magnet:` link in Safari and forward it to a remote Transmission daemon over its JSON-RPC endpoint, instead of letting Safari try to hand it to a local torrent client. Personal, open-source tool -- no App Store distribution planned.
 
-**Status: extension scaffold implemented and validated in Safari.** The `extension/` source (manifest, background/content scripts, options page, ported Transmission RPC client, magnet-link validation, Node unit tests) is committed and was confirmed working end-to-end against a real Transmission daemon via Safari's temporary-extension dev-mode loading (Safari Settings > Developer > "Add Temporary Extension...") -- both click-to-add and right-click-to-add work. See `README.md` for build/install/usage details and known limitations.
+**Status: packaged, signed, and running persistently in Safari.** The `extension/` source (manifest, background/content scripts, options page, Transmission RPC client, magnet-link validation, Node unit tests) is committed and validated end-to-end against a real Transmission daemon -- click-to-add and right-click-to-add both work. It's been run through `xcrun safari-web-extension-packager`, producing `Lodestone/Lodestone.xcodeproj` (also committed, so others can build their own copy), built and self-signed locally with a free Apple ID team. See `README.md` for build/install/usage details, file layout, and known gotchas.
 
-**Next step:** package and sign via Xcode (`xcrun safari-web-extension-packager`) for a persistent, non-temporary install -- not yet done as of this writing.
+**Open items:** currently runs from Xcode's Debug build (DerivedData), not a permanent `/Applications` install (would need Product > Archive); the right-click context menu shows on all links, not just magnet ones (documented Safari limitation, see README).
 
 ## Why this exists
 
@@ -18,23 +18,21 @@ Surveyed the existing landscape (as of 2026-09) before deciding to build this an
 - No maintained Safari Web Extension (the current, WebExtensions-API-based format) fills this gap.
 - Chrome/Firefox have options in this space (e.g. `magnet-linker-browser-extension`, `transmitter`), and native remote-control apps exist for other purposes (`transgui`, `transmission-remote-mac`), but nothing current targets "click a magnet link in Safari, send it to a remote box."
 
-This is a companion project to **magnetfwd** (`~/dev/golang/magnetfwd`), a small Go daemon that polls the macOS clipboard for magnet links and forwards them to Transmission. magnetfwd catches magnet URIs copied as *plain text* (e.g. pasted from Discord/Slack with no clickable link); Lodestone catches magnet URIs that appear as an actual `<a href="magnet:...">` link clicked in Safari. Different trigger, same destination (a remote Transmission RPC endpoint), same underlying protocol. The two are deliberately not merged -- different languages, different OS integration points, no shared code -- but should stay conceptually consistent (see below).
+## Design decisions
 
-## Design decisions carried over from magnetfwd
-
-- **No App Store distribution.** Not paying Apple's $99/year Developer Program fee to distribute a free personal tool. Plan is to self-sign locally with a free Apple ID and open-source the code so anyone else who wants it builds and signs their own copy via Xcode.
-- **Personal-scale scope.** No web UI, no settings sync, no telemetry. A single remote Transmission host + optional auth, entered once, is the entire configuration surface -- this mirrors magnetfwd's `transmission_host` / `transmission_auth` config keys, and reusing that naming in whatever config storage the extension ends up using (likely `browser.storage.local`) would keep the two projects legible as a pair.
+- **No App Store distribution.** Not paying Apple's $99/year Developer Program fee to distribute a free personal tool. Self-signed locally with a free Apple ID; open-source so anyone else who wants it builds and signs their own copy via Xcode.
+- **Personal-scale scope.** No web UI, no settings sync, no telemetry. A single remote Transmission host + optional auth, entered once via the options page and stored in `browser.storage.local` under `transmission_host` / `transmission_auth`, is the entire configuration surface.
 - **Small and single-purpose.** Resist scope creep toward a general Transmission remote-control UI (that space is already served by transgui, transmission-remote-mac, etc.) -- Lodestone's entire job is "click magnet link -> add to remote host," nothing more.
 
 ## Tech stack
 
 - **Extension logic**: HTML/CSS/JavaScript via the WebExtensions API (`extension/manifest.json`, `background.js`, `content.js`, `contextMenus` plus a content script watching for `magnet:` links) -- the same model Chrome/Firefox extensions use, not Swift. Implemented in `extension/`.
-- **Packaging**: Safari requires the extension to ship inside a thin native macOS app container for signing/loading. Apple's `xcrun safari-web-extension-packager` generates that wrapper (and an Xcode project) from the plain JS extension folder -- use the generated template as-is rather than hand-writing Swift. Not yet run; see "Next step" above.
-- **RPC**: `fetch()` against Transmission's `/transmission/rpc` JSON-RPC endpoint, including the `X-Transmission-Session-Id` CSRF handshake (409 response -> retry with refreshed session ID) -- the same handshake magnetfwd's `internal/transmission/client.go` implements in Go, ported (not shared) as `extension/lib/transmission-client.js`.
+- **Packaging**: Safari requires the extension to ship inside a thin native macOS app container for signing/loading. Apple's `xcrun safari-web-extension-packager` generates that wrapper (and an Xcode project) from the plain JS extension folder -- the generated `Lodestone/` project is used as-is rather than hand-writing Swift.
+- **RPC**: `fetch()` against Transmission's `/transmission/rpc` JSON-RPC endpoint (`extension/lib/transmission-client.js`), including the `X-Transmission-Session-Id` CSRF handshake (409 response -> retry with refreshed session ID).
 
-## Naming
+## Companion tool
 
-**Lodestone** was chosen over MagSling, FlingMag, and MagRelay. No GitHub repo-name collisions exist in the torrent/magnet/Safari space, but "lodestone" is also the name of Final Fantasy XIV's official web service (unrelated, but a common search result) -- worth a disambiguating subtitle in the eventual README, e.g. "Lodestone -- forward magnet links to remote Transmission."
+[mtn-man/mintmedia](https://github.com/mtn-man/mintmedia) handles the next stage of the pipeline: managing the download -> sorted library layer. Separate concern, not merged.
 
 ## Workflow conventions
 
