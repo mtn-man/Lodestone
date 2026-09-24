@@ -32,7 +32,7 @@
       await browser.storage.local.get(['transmission_host', 'transmission_auth']);
 
     if (!host) {
-      const message = 'Set a Transmission host in Lodestone options.';
+      const message = 'Set a Transmission host in the Lodestone popup.';
       await showResult(false, message);
       return { ok: false, error: message };
     }
@@ -56,10 +56,6 @@
     if (info.menuItemId === MENU_ID && info.linkUrl) {
       handleMagnetUri(info.linkUrl);
     }
-  });
-
-  browser.action.onClicked.addListener(() => {
-    browser.runtime.openOptionsPage();
   });
 
   (async () => {

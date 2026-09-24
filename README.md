@@ -22,16 +22,16 @@ For quick iteration without Xcode: Safari Settings > Developer > Add Temporary E
 
 ## Configure
 
-Extension options page: `transmission_host` (`host:port`), optional `transmission_auth` (`user:pass`). Save triggers a one-time per-host permission prompt (dynamic `optional_host_permissions`, not a blanket grant).
+Toolbar popup (click the Lodestone icon): `transmission_host` (`host:port`), optional `transmission_auth` (`user:pass`). Save triggers a one-time per-host permission prompt (dynamic `optional_host_permissions`, not a blanket grant).
 
 ## Layout
 
 ```
 extension/
   manifest.json
-  background.js            -- message/contextMenu routing, badge feedback, opens options on icon click
+  background.js            -- message/contextMenu routing, badge feedback
   content.js               -- intercepts magnet: link clicks
-  options.html / options.js
+  popup.html / popup.js    -- toolbar popup: settings form
   lib/
     magnet.js              -- magnet: URI parsing/validation
     transmission-client.js -- RPC client (CSRF handshake, basic auth, 10s timeout)

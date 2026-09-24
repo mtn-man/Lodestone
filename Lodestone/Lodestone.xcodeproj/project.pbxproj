@@ -18,10 +18,10 @@
 		CEFB636A30647C9D00D0169D /* Lodestone Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CEFB636930647C9D00D0169D /* Lodestone Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		CEFB636F30647C9D00D0169D /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB636E30647C9D00D0169D /* SafariWebExtensionHandler.swift */; };
 		CEFB638130647C9D00D0169D /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = CEFB637B30647C9D00D0169D /* background.js */; };
-		CEFB638230647C9D00D0169D /* options.js in Resources */ = {isa = PBXBuildFile; fileRef = CEFB637C30647C9D00D0169D /* options.js */; };
+		CEFB638230647C9D00D0169D /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = CEFB637C30647C9D00D0169D /* popup.js */; };
 		CEFB638330647C9D00D0169D /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = CEFB637D30647C9D00D0169D /* manifest.json */; };
 		CEFB638430647C9D00D0169D /* lib in Resources */ = {isa = PBXBuildFile; fileRef = CEFB637E30647C9D00D0169D /* lib */; };
-		CEFB638530647C9D00D0169D /* options.html in Resources */ = {isa = PBXBuildFile; fileRef = CEFB637F30647C9D00D0169D /* options.html */; };
+		CEFB638530647C9D00D0169D /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = CEFB637F30647C9D00D0169D /* popup.html */; };
 		CEFB638630647C9D00D0169D /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = CEFB638030647C9D00D0169D /* content.js */; };
 /* End PBXBuildFile section */
 
@@ -62,10 +62,10 @@
 		CEFB636E30647C9D00D0169D /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
 		CEFB637030647C9D00D0169D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		CEFB637B30647C9D00D0169D /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = ../../extension/background.js; sourceTree = "<group>"; };
-		CEFB637C30647C9D00D0169D /* options.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = options.js; path = ../../extension/options.js; sourceTree = "<group>"; };
+		CEFB637C30647C9D00D0169D /* popup.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = popup.js; path = ../../extension/popup.js; sourceTree = "<group>"; };
 		CEFB637D30647C9D00D0169D /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = ../../extension/manifest.json; sourceTree = "<group>"; };
 		CEFB637E30647C9D00D0169D /* lib */ = {isa = PBXFileReference; lastKnownFileType = folder; name = lib; path = ../../extension/lib; sourceTree = "<group>"; };
-		CEFB637F30647C9D00D0169D /* options.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = options.html; path = ../../extension/options.html; sourceTree = "<group>"; };
+		CEFB637F30647C9D00D0169D /* popup.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = popup.html; path = ../../extension/popup.html; sourceTree = "<group>"; };
 		CEFB638030647C9D00D0169D /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = content.js; path = ../../extension/content.js; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -139,10 +139,10 @@
 			isa = PBXGroup;
 			children = (
 				CEFB637B30647C9D00D0169D /* background.js */,
-				CEFB637C30647C9D00D0169D /* options.js */,
+				CEFB637C30647C9D00D0169D /* popup.js */,
 				CEFB637D30647C9D00D0169D /* manifest.json */,
 				CEFB637E30647C9D00D0169D /* lib */,
-				CEFB637F30647C9D00D0169D /* options.html */,
+				CEFB637F30647C9D00D0169D /* popup.html */,
 				CEFB638030647C9D00D0169D /* content.js */,
 			);
 			name = Resources;
@@ -242,9 +242,9 @@
 				CEFB638630647C9D00D0169D /* content.js in Resources */,
 				CEFB638130647C9D00D0169D /* background.js in Resources */,
 				CEFB638330647C9D00D0169D /* manifest.json in Resources */,
-				CEFB638530647C9D00D0169D /* options.html in Resources */,
+				CEFB638530647C9D00D0169D /* popup.html in Resources */,
 				CEFB638430647C9D00D0169D /* lib in Resources */,
-				CEFB638230647C9D00D0169D /* options.js in Resources */,
+				CEFB638230647C9D00D0169D /* popup.js in Resources */,
 			);
 		};
 /* End PBXResourcesBuildPhase section */

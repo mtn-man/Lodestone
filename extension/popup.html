@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Lodestone</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    width: 280px;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 16px;
+    font: 13px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    background: #182530;
+    color: #e8eaed;
+  }
+  h1 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #f2f3f5;
+  }
+  p.tagline {
+    margin: 0 0 16px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #8c9096;
+  }
+  label {
+    display: block;
+    margin-top: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #c3c8ce;
+  }
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 4px;
+    padding: 7px 8px;
+    font: inherit;
+    color: #e8eaed;
+    background: #1f2f3d;
+    border: 1px solid #33475a;
+    border-radius: 6px;
+  }
+  input::placeholder { color: #6b7480; }
+  input:focus {
+    outline: none;
+    border-color: #5a9bd8;
+    box-shadow: 0 0 0 2px rgba(90, 155, 216, 0.35);
+  }
+  button {
+    margin-top: 16px;
+    padding: 7px 16px;
+    font: inherit;
+    font-weight: 600;
+    color: #eaf1fa;
+    background: #3d6ea5;
+    border: 1px solid #4a86bd;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  button:hover { background: #4a7fb8; }
+  button:active { background: #2f5580; }
+  #status {
+    margin-top: 12px;
+    min-height: 14px;
+    font-size: 12px;
+    color: #9aa4b1;
+  }
+  #status.error { color: #ff6b6b; }
+</style>
+</head>
+<body>
+  <h1>Lodestone</h1>
+  <p class="tagline">Forward magnet links to a remote Transmission daemon.</p>
+  <form id="options-form">
+    <label for="host">Transmission host (host:port)</label>
+    <input id="host" type="text" placeholder="192.168.1.50:9091" required>
+
+    <label for="auth">Auth (user:pass, optional)</label>
+    <input id="auth" type="text" placeholder="user:pass">
+
+    <button type="submit">Save</button>
+  </form>
+  <div id="status"></div>
+  <script src="lib/transmission-client.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

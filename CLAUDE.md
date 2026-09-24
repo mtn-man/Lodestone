@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working in this
 
 Lodestone is a Safari Web Extension: intercept a clicked (or right-clicked) `magnet:` link in Safari and forward it to a remote Transmission daemon over its JSON-RPC endpoint, instead of letting Safari try to hand it to a local torrent client. Personal, open-source tool -- no App Store distribution planned.
 
-**Status: packaged, signed, and running persistently in Safari.** The `extension/` source (manifest, background/content scripts, options page, Transmission RPC client, magnet-link validation, Node unit tests) is committed and validated end-to-end against a real Transmission daemon -- click-to-add and right-click-to-add both work. It's been run through `xcrun safari-web-extension-packager`, producing `Lodestone/Lodestone.xcodeproj` (also committed, so others can build their own copy), built and self-signed locally with a free Apple ID team. See `README.md` for build/install/usage details, file layout, and known gotchas.
+**Status: packaged, signed, and running persistently in Safari.** The `extension/` source (manifest, background/content scripts, settings popup, Transmission RPC client, magnet-link validation, Node unit tests) is committed and validated end-to-end against a real Transmission daemon -- click-to-add and right-click-to-add both work. It's been run through `xcrun safari-web-extension-packager`, producing `Lodestone/Lodestone.xcodeproj` (also committed, so others can build their own copy), built and self-signed locally with a free Apple ID team. See `README.md` for build/install/usage details, file layout, and known gotchas.
 
 **Open items:** currently runs from Xcode's Debug build (DerivedData), not a permanent `/Applications` install (would need Product > Archive); the right-click context menu shows on all links, not just magnet ones (documented Safari limitation, see README).
 
@@ -21,7 +21,7 @@ Surveyed the existing landscape (as of 2026-09) before deciding to build this an
 ## Design decisions
 
 - **No App Store distribution.** Not paying Apple's $99/year Developer Program fee to distribute a free personal tool. Self-signed locally with a free Apple ID; open-source so anyone else who wants it builds and signs their own copy via Xcode.
-- **Personal-scale scope.** No web UI, no settings sync, no telemetry. A single remote Transmission host + optional auth, entered once via the options page and stored in `browser.storage.local` under `transmission_host` / `transmission_auth`, is the entire configuration surface.
+- **Personal-scale scope.** No web UI, no settings sync, no telemetry. A single remote Transmission host + optional auth, entered once via the toolbar popup and stored in `browser.storage.local` under `transmission_host` / `transmission_auth`, is the entire configuration surface.
 - **Small and single-purpose.** Resist scope creep toward a general Transmission remote-control UI (that space is already served by transgui, transmission-remote-mac, etc.) -- Lodestone's entire job is "click magnet link -> add to remote host," nothing more.
 
 ## Tech stack
