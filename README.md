@@ -38,6 +38,7 @@ Lodestone/
     Assets.xcassets/
 design/
   icon.svg + generate-icons.sh    -- app icon only; icon-toolbar.svg is historical (see script comment)
+                                     and stays unused: the menu-bar icon is the SF Symbol link.circle by choice
 ```
 
 ## Dev
