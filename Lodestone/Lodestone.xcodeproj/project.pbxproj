@@ -18,6 +18,8 @@
 		CEFB639D30647C9E00D0169D /* MenuBarMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB639C30647C9E00D0169D /* MenuBarMenuView.swift */; };
 		CEFB639F30647C9E00D0169D /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB639E30647C9E00D0169D /* SettingsWindowController.swift */; };
 		CEFB63A130647C9E00D0169D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB63A030647C9E00D0169D /* SettingsView.swift */; };
+		CEFB63B630647C9E00D0169D /* MagnetParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB63B130647C9E00D0169D /* MagnetParserTests.swift */; };
+		CEFB63B730647C9E00D0169D /* MagnetParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB639230647C9E00D0169D /* MagnetParser.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,10 +36,17 @@
 		CEFB639C30647C9E00D0169D /* MenuBarMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarMenuView.swift; sourceTree = "<group>"; };
 		CEFB639E30647C9E00D0169D /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		CEFB63A030647C9E00D0169D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		CEFB63B030647C9E00D0169D /* LodestoneTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LodestoneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CEFB63B130647C9E00D0169D /* MagnetParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagnetParserTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		CEFB634B30647C9C00D0169D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		CEFB63B530647C9E00D0169D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
 			);
@@ -49,6 +58,7 @@
 			isa = PBXGroup;
 			children = (
 				CEFB635030647C9C00D0169D /* Lodestone */,
+				CEFB63B230647C9E00D0169D /* LodestoneTests */,
 				CEFB634F30647C9C00D0169D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -57,6 +67,7 @@
 			isa = PBXGroup;
 			children = (
 				CEFB634E30647C9C00D0169D /* Lodestone.app */,
+				CEFB63B030647C9E00D0169D /* LodestoneTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -80,6 +91,14 @@
 			path = Lodestone;
 			sourceTree = "<group>";
 		};
+		CEFB63B230647C9E00D0169D /* LodestoneTests */ = {
+			isa = PBXGroup;
+			children = (
+				CEFB63B130647C9E00D0169D /* MagnetParserTests.swift */,
+			);
+			path = LodestoneTests;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -100,6 +119,22 @@
 			productReference = CEFB634E30647C9C00D0169D /* Lodestone.app */;
 			productType = "com.apple.product-type.application";
 		};
+		CEFB63B330647C9E00D0169D /* LodestoneTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CEFB63B830647C9E00D0169D /* Build configuration list for PBXNativeTarget "LodestoneTests" */;
+			buildPhases = (
+				CEFB63B430647C9E00D0169D /* Sources */,
+				CEFB63B530647C9E00D0169D /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LodestoneTests;
+			productName = LodestoneTests;
+			productReference = CEFB63B030647C9E00D0169D /* LodestoneTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -111,6 +146,9 @@
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					CEFB634D30647C9C00D0169D = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					CEFB63B330647C9E00D0169D = {
 						CreatedOnToolsVersion = 27.0;
 					};
 				};
@@ -130,6 +168,7 @@
 			projectRoot = "";
 			targets = (
 				CEFB634D30647C9C00D0169D /* Lodestone */,
+				CEFB63B330647C9E00D0169D /* LodestoneTests */,
 			);
 		};
 /* End PBXProject section */
@@ -157,6 +196,13 @@
 				CEFB639D30647C9E00D0169D /* MenuBarMenuView.swift in Sources */,
 				CEFB639F30647C9E00D0169D /* SettingsWindowController.swift in Sources */,
 				CEFB63A130647C9E00D0169D /* SettingsView.swift in Sources */,
+			);
+		};
+		CEFB63B430647C9E00D0169D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				CEFB63B630647C9E00D0169D /* MagnetParserTests.swift in Sources */,
+				CEFB63B730647C9E00D0169D /* MagnetParser.swift in Sources */,
 			);
 		};
 /* End PBXSourcesBuildPhase section */
@@ -352,6 +398,44 @@
 			};
 			name = Release;
 		};
+		CEFB63B930647C9E00D0169D /* Debug configuration for PBXNativeTarget "LodestoneTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BYAWF5CGAW;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.mtn-man.LodestoneTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		CEFB63BA30647C9E00D0169D /* Release configuration for PBXNativeTarget "LodestoneTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BYAWF5CGAW;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.mtn-man.LodestoneTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -369,6 +453,15 @@
 				CEFB637830647C9D00D0169D /* Debug configuration for PBXNativeTarget "Lodestone" */,
 				CEFB637930647C9D00D0169D /* Release configuration for PBXNativeTarget "Lodestone" */,
 			);
+			defaultConfigurationName = Release;
+		};
+		CEFB63B830647C9E00D0169D /* Build configuration list for PBXNativeTarget "LodestoneTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CEFB63B930647C9E00D0169D /* Debug configuration for PBXNativeTarget "LodestoneTests" */,
+				CEFB63BA30647C9E00D0169D /* Release configuration for PBXNativeTarget "LodestoneTests" */,
+			);
+			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
