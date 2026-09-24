@@ -11,7 +11,6 @@
 //
 
 import Cocoa
-import CoreServices
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
@@ -28,10 +27,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // which get a System Settings picker). Re-asserting on every launch
     // ensures Lodestone stays the default while it's running, rather than
     // silently losing the registration to whatever else last claimed it.
+    //
+    // NSWorkspace replaces LSSetDefaultHandlerForURLScheme, deprecated since
+    // macOS 12. It identifies the app by bundle URL rather than bundle ID,
+    // and reports failure by throwing rather than by an OSStatus -- the
+    // failure worth recognizing in the log is still the sandbox one
+    // (formerly -54 / permErr), since no entitlement permits a sandboxed app
+    // to mutate the system-wide default-handler database (see README).
     private func claimMagnetHandler() {
-        guard let bundleID = Bundle.main.bundleIdentifier else { return }
-        let status = LSSetDefaultHandlerForURLScheme("magnet" as CFString, bundleID as CFString)
-        NSLog("Lodestone: LSSetDefaultHandlerForURLScheme(magnet, %@) -> %d", bundleID, status)
+        Task {
+            do {
+                try await NSWorkspace.shared.setDefaultApplication(
+                    at: Bundle.main.bundleURL, toOpenURLsWithScheme: "magnet")
+            } catch {
+                NSLog("Lodestone: could not claim the magnet: scheme -- %@",
+                      error.localizedDescription)
+            }
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

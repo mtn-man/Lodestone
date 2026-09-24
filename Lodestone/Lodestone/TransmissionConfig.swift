@@ -48,6 +48,19 @@ nonisolated struct TransmissionConfig: Equatable, Sendable {
                 "transmission host scheme must be http or https, not \(scheme)")
         }
 
+        // Transmission's Basic auth header rides on every RPC request, so
+        // cleartext http is confined to destinations the traffic cannot
+        // leave a network the user controls to reach. This is the narrow
+        // transport-security rule Info.plist cannot express: ATS exceptions
+        // are written against domains known at build time, and this host is
+        // typed by the user at runtime, so the app has to enforce it (see
+        // README "Gotchas").
+        if scheme == "http", !Self.allowsCleartext(parsedHost) {
+            throw TransmissionError.message(
+                "\(parsedHost) is not a local address -- use https:// so the "
+                    + "transmission password is not sent in the clear")
+        }
+
         // URLComponents accepts any integer as a port; TCP does not.
         if let port = comps.port, !(1...65535).contains(port) {
             throw TransmissionError.message("\(port) is not a valid port -- use 1-65535")
@@ -87,6 +100,66 @@ nonisolated struct TransmissionConfig: Equatable, Sendable {
         comps.port = port
         comps.path = path
         return comps.url
+    }
+
+    /// Whether plain http to this host stays inside the user's own network.
+    /// Deliberately broader than ATS's `NSAllowsLocalNetworking`, which
+    /// covers only RFC 1918 and would reject the CGNAT range a Tailscale
+    /// host lives in -- the reason that exception was rejected in favour of
+    /// `NSAllowsArbitraryLoads` plus this check.
+    private static func allowsCleartext(_ rawHost: String) -> Bool {
+        // URLComponents strips the brackets from an IPv6 literal, but trim
+        // them anyway so this holds either way.
+        let host = rawHost.trimmingCharacters(in: CharacterSet(charactersIn: "[]")).lowercased()
+        if host.contains(":") { return isLocalIPv6(host) }
+        if let octets = ipv4Octets(host) { return isLocalIPv4(octets) }
+        return isLocalName(host)
+    }
+
+    /// nil for anything that is not a dotted-quad literal -- a hostname that
+    /// merely starts with digits is a name, and is judged as one.
+    private static func ipv4Octets(_ host: String) -> [Int]? {
+        let parts = host.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 4 else { return nil }
+        let octets = parts.compactMap { Int($0) }
+        guard octets.count == 4, octets.allSatisfy({ (0...255).contains($0) }) else { return nil }
+        return octets
+    }
+
+    private static func isLocalIPv4(_ octets: [Int]) -> Bool {
+        switch (octets[0], octets[1]) {
+        case (127, _): return true          // loopback
+        case (10, _): return true           // RFC 1918
+        case (172, 16...31): return true    // RFC 1918
+        case (192, 168): return true        // RFC 1918
+        case (100, 64...127): return true   // RFC 6598 CGNAT -- where Tailscale lives
+        case (169, 254): return true        // link-local
+        default: return false
+        }
+    }
+
+    /// Matched on the textual first group, which is unambiguous here: the
+    /// leading group of an address in these ranges cannot be written with a
+    /// leading zero or elided, so the prefix is always spelled out.
+    private static func isLocalIPv6(_ host: String) -> Bool {
+        if host == "::1" { return true }                                   // loopback
+        if host.hasPrefix("fc") || host.hasPrefix("fd") { return true }    // fc00::/7 unique-local
+        // fe80::/10 -- first group fe80 through febf.
+        if let first = host.split(separator: ":").first, first.count == 4,
+           first.hasPrefix("fe"), let nibble = Int(first.dropFirst(2).prefix(1), radix: 16),
+           (8...11).contains(nibble) {
+            return true
+        }
+        return false
+    }
+
+    private static func isLocalName(_ host: String) -> Bool {
+        if host == "localhost" { return true }
+        if host.hasSuffix(".local") { return true }    // mDNS/Bonjour
+        if host.hasSuffix(".ts.net") { return true }   // Tailscale MagicDNS -- resolves into 100.64.0.0/10
+        // An unqualified single-label name resolves through the local
+        // search domain, so it cannot name a host off the network either.
+        return !host.contains(".")
     }
 
     private static func malformed(_ host: String) -> String {

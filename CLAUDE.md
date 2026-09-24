@@ -38,7 +38,7 @@ Surveyed the existing landscape (as of 2026-09) before deciding to build this an
 ## Tech stack
 
 - **App**: SwiftUI (`MenuBarExtra` scene, `@NSApplicationDelegateAdaptor`), no Dock icon (`LSUIElement`). `AppDelegate.application(_:open:)` receives magnet: opens -- the reliable path for a `MenuBarExtra`-only app (SwiftUI's `.onOpenURL` is documented-unreliable without a `WindowGroup`).
-- **URL scheme registration**: `CFBundleURLTypes` in Info.plist declares the `magnet` scheme; `LSSetDefaultHandlerForURLScheme` is called on every launch to (re)claim default-handler status, since other apps (Transmission.app) can also claim it and macOS has no chooser UI for custom schemes.
+- **URL scheme registration**: `CFBundleURLTypes` in Info.plist declares the `magnet` scheme; `NSWorkspace.setDefaultApplication(at:toOpenURLsWithScheme:)` is called on every launch to (re)claim default-handler status, since other apps (Transmission.app) can also claim it and macOS has no chooser UI for custom schemes.
 - **RPC**: `URLSession` against Transmission's `/transmission/rpc` JSON-RPC endpoint (`TransmissionClient.swift`), including the `X-Transmission-Session-Id` CSRF handshake (409 response -> retry with refreshed session ID). Direct Swift port of the original JS client.
 
 ## Companion tool

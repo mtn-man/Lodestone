@@ -37,6 +37,17 @@ nonisolated struct TransmissionConfigTests {
         // A pasted endpoint keeps only its origin -- the path is ours to set.
         HostCase(input: "http://nas.local:9091/transmission/web/", rpc: "http://nas.local:9091/transmission/rpc"),
         HostCase(input: "nas.local:9091/", rpc: "http://nas.local:9091/transmission/rpc"),
+        // Cleartext destinations that stay on a network the user controls.
+        HostCase(input: "localhost:9091", rpc: "http://localhost:9091/transmission/rpc"),
+        HostCase(input: "nas:9091", rpc: "http://nas:9091/transmission/rpc"),
+        HostCase(input: "10.0.0.5:9091", rpc: "http://10.0.0.5:9091/transmission/rpc"),
+        HostCase(input: "172.16.0.1:9091", rpc: "http://172.16.0.1:9091/transmission/rpc"),
+        HostCase(input: "169.254.3.4:9091", rpc: "http://169.254.3.4:9091/transmission/rpc"),
+        HostCase(input: "100.101.102.103:9091", rpc: "http://100.101.102.103:9091/transmission/rpc"),
+        HostCase(input: "nas.tail1234.ts.net:9091", rpc: "http://nas.tail1234.ts.net:9091/transmission/rpc"),
+        HostCase(input: "[fd7a:115c::1]:9091", rpc: "http://[fd7a:115c::1]:9091/transmission/rpc"),
+        // A routable host is fine over TLS -- only the cleartext hop is refused.
+        HostCase(input: "https://transmission.example.com", rpc: "https://transmission.example.com/transmission/rpc"),
     ]
 
     @Test("accepts well-formed hosts", arguments: accepted)
@@ -56,6 +67,13 @@ nonisolated struct TransmissionConfigTests {
         "nas.local:99999",    // port out of TCP range
         "nas.local:0",
         "user:pass@nas.local:9091",
+        // Cleartext to a host the traffic would leave the network to reach.
+        "transmission.example.com:9091",
+        "http://transmission.example.com:9091",
+        "8.8.8.8:9091",
+        "172.32.0.1:9091",      // just outside RFC 1918 -- 172.16/12 ends at .31
+        "100.128.0.1:9091",     // just outside CGNAT -- 100.64/10 ends at 100.127
+        "[2606:4700::1111]:9091",
     ]
 
     @Test("rejects malformed hosts", arguments: rejected)
@@ -72,6 +90,19 @@ nonisolated struct TransmissionConfigTests {
     func rejectionNeverYieldsURL(_ host: String) {
         let config = try? TransmissionConfig(host: host, auth: "")
         #expect(config == nil)
+    }
+
+    /// Transmission sends its Basic auth header on every request, so the
+    /// same host is a different proposition over http and https. The pair
+    /// is asserted together so a failure here reads as the *scheme* rule
+    /// breaking, not the host being rejected outright.
+    @Test("a routable host is refused in the clear but allowed over TLS")
+    func cleartextIsSchemeSpecific() throws {
+        #expect(throws: TransmissionError.self) {
+            _ = try TransmissionConfig(host: "http://transmission.example.com", auth: "")
+        }
+        let tls = try TransmissionConfig(host: "https://transmission.example.com", auth: "")
+        #expect(tls.rpcURL.absoluteString == "https://transmission.example.com/transmission/rpc")
     }
 
     @Test("web URL points at the portal")
