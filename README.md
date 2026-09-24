@@ -1,65 +1,57 @@
 # Lodestone
 
-Safari Web Extension: forwards clicked/right-clicked `magnet:` links to a remote Transmission daemon's JSON-RPC endpoint (`/transmission/rpc`).
+Menu-bar-only macOS app: registers as the system handler for `magnet:` links and forwards them to a remote Transmission daemon's JSON-RPC endpoint (`/transmission/rpc`).
 
 Personal tool, no App Store distribution -- self-signed locally via a free Apple ID. Add-only; not a Transmission control UI.
 
 ## Requirements
 
-- macOS + Xcode (packaging/signing)
-- Safari 16.4+ (Manifest V3)
+- macOS + Xcode
 - Reachable Transmission daemon with RPC enabled
 
 ## Build
 
-```
-xcrun safari-web-extension-packager extension --project-location . --bundle-identifier com.<you>.Lodestone
-```
+Open `Lodestone/Lodestone.xcodeproj` in Xcode, confirm the signing team on the `Lodestone` target is set to your free-tier team, signing certificate **Development** (not "Sign to Run Locally" -- ad-hoc signing breaks local network access). Cmd+R to build and run -- a small icon appears in the menu bar, no Dock icon. Command-line builds also work: `xcodebuild -project Lodestone/Lodestone.xcodeproj -scheme Lodestone -configuration Debug build`.
 
-Open the generated `Lodestone.xcodeproj`, set the signing team on **both** targets (app + extension) to the same free-tier team, signing certificate **Development** (not "Sign to Run Locally" -- ad-hoc signing breaks local network access). Build & run to register with Safari, then enable it in Safari Settings > Extensions. Unnotarized local build also needs "Allow Unsigned Extensions" in the Develop menu.
-
-For quick iteration without Xcode: Safari Settings > Developer > Add Temporary Extension -> point at `extension/`. Session-only, no signing.
+First launch registers Lodestone as the default `magnet:` URL handler automatically (re-asserted on every launch, since other installed apps -- e.g. Transmission.app itself -- can also claim the scheme and there's no System Settings picker for custom URL schemes the way there is for browsers/mail).
 
 ## Configure
 
-Toolbar popup (click the Lodestone icon): `transmission_host` (`host:port`), optional `transmission_auth` (`user:pass`). Save triggers a one-time per-host permission prompt (dynamic `optional_host_permissions`, not a blanket grant), then a live RPC connectivity check -- an unreachable host or bad auth is rejected with an error instead of being saved silently. Once a host is saved, the popup also shows a link to Transmission's own web portal (`http://<host>/transmission/web/`).
+Click the menu-bar icon -> Settings...: `transmission_host` (`host:port`), optional `transmission_auth` (`user:pass`, stored in the macOS Keychain). Save runs a live RPC connectivity check -- an unreachable host or bad auth is rejected with an error instead of being saved silently. Once a host is saved, the Settings window also shows a link to Transmission's own web portal (`http://<host>/transmission/web/`).
 
 ## Layout
 
 ```
-extension/
-  manifest.json
-  background.js            -- message/contextMenu routing, badge feedback
-  content.js               -- intercepts magnet: link clicks
-  popup.html / popup.js    -- toolbar popup: settings form
-  lib/
-    magnet.js              -- magnet: URI parsing/validation
-    transmission-client.js -- RPC client (CSRF handshake, basic auth, 10s timeout)
-    icons/
-tests/                     -- node --test coverage for lib/*.js
+Lodestone/
+  Lodestone.xcodeproj/
+  Lodestone/
+    LodestoneApp.swift            -- @main SwiftUI App, MenuBarExtra scene
+    AppDelegate.swift             -- receives magnet: opens, claims default handler
+    MagnetParser.swift            -- magnet: URI parsing/validation
+    TransmissionClient.swift      -- RPC client (CSRF handshake, basic auth, 10s timeout)
+    Preferences.swift             -- UserDefaults (host)
+    KeychainStore.swift           -- Keychain (auth credential)
+    NotificationFeedback.swift    -- local notification on add success/failure
+    MenuBarMenuView.swift         -- Settings.../Quit menu
+    SettingsWindowController.swift / SettingsView.swift -- native settings window
+    Assets.xcassets/
 design/
-  icon.svg + generate-icons.sh
-Lodestone/                 -- generated Xcode project (packager output; committed so others can build)
+  icon.svg + generate-icons.sh    -- app icon only; icon-toolbar.svg is historical (see script comment)
 ```
 
 ## Dev
 
-```
-npm test
-```
-
-No build step, no bundler, no deps for the extension itself -- `extension/` loads as-is.
+No automated test suite yet -- the original Safari-extension-era JS tests (`tests/*.test.js`, covering magnet parsing and the Transmission RPC client) were deleted along with `extension/` when this became a native app; their fixtures/cases are still the right behavioral spec if a Swift XCTest suite gets added later (`MagnetParser.swift` and `TransmissionClient.swift` are direct ports of that JS logic).
 
 ## Gotchas
 
-- `contextMenus.create({targetUrlPatterns: ['magnet:*']})` is rejected -- match-pattern grammar requires `scheme://host/path`, which `magnet:` (no host) can't satisfy. Context menu item shows on all links; click-through still validates and errors cleanly on non-magnet links.
-- `permissions.request()` must run synchronously off the triggering event (no `await` before it) or Safari silently drops the user-gesture association and never prompts.
-- Match patterns can't encode a port -- host permission is granted per-hostname, `fetch()` still uses the real host:port.
-- Icon background can't be near-black: `#0d0d0f` makes Safari silently fail to load `icons`/`action.default_icon` (blank toolbar + Extensions-pane icon, everywhere else fine); `#141416` works. No known root cause, just avoid true-black-ish values.
-- The toolbar icon (`action.default_icon`) auto-tints solid blue if its background color is too dark/desaturated (a near-black or navy-dark fill, at any coverage down to ~48%) -- it's about color darkness, not the presence of a background shape. Bright/saturated colors (red, navy `#1c3a5e`) render correctly. `design/icon-toolbar.svg` is a separate source used only here.
-- The toolbar icon's apparent size follows its background badge, not the bare glyph -- Safari trims to visible content and rescales to a fixed slot, so a transparent-background glyph with padding just gets rescaled back to the same size (padding is undone, only costs resolution). Give it a safely-colored background shape (a circle, like real extensions use) to control the actual on-screen footprint instead.
-- No `notifications` permission -- feedback is a toolbar badge (green OK / red ERR, tooltip has error detail).
-- App/plugin icon caches (LaunchServices, `pluginkit`, Safari's own extension state) are independent and go stale separately -- if an icon change doesn't show up, don't assume it's a real bug before re-registering/restarting each layer.
+- **App Sandbox blocks `LSSetDefaultHandlerForURLScheme`.** The self-claim-on-launch call (see AppDelegate) returns `-54` (`permErr`) under App Sandbox -- there's no entitlement that allows a sandboxed app to mutate the system-wide Launch Services default-handler database. App Sandbox is disabled for this target (`ENABLE_APP_SANDBOX = NO`); this is fine for a non-App-Store personal tool, but re-enabling sandbox would silently break default-handler registration again.
+- **App Transport Security blocks plain HTTP by default.** Transmission's RPC is unencrypted `http://`, so `NSAppTransportSecurity` / `NSAllowsArbitraryLoads` is set in Info.plist. The narrower `NSAllowsLocalNetworking` exception was considered but rejected -- it only covers RFC 1918 private ranges, not CGNAT/Tailscale-style `100.64.0.0/10` addresses, and the host is user-configured so it could be anywhere.
+- **Other apps can also claim `magnet:`.** Transmission.app's own GUI client registers for the scheme too, and macOS silently picks one as default with no chooser UI for custom schemes (unlike the browser/mail picker in System Settings). Lodestone re-calls `LSSetDefaultHandlerForURLScheme` on every launch to reclaim itself as default.
+- **`NSWindow(contentViewController:)` doesn't reliably size/position itself** -- the Settings window uses the designated `NSWindow(contentRect:styleMask:backing:defer:)` initializer with an explicit frame instead, or it can end up created off-screen/zero-size with no visible error.
+- **`NSApp.delegate as? AppDelegate` is not a reliable way to reach the app delegate from a `MenuBarExtra` view** -- observed as a silent no-op (the cast apparently failing) rather than a crash. `SettingsWindowController` is a plain singleton instead, referenced directly.
+- **SwiftUI's `Settings` scene / `openSettings()` is fragile in `MenuBarExtra`-only apps** (no `WindowGroup`) -- needs hidden decoy windows and timing hacks to work at all in that configuration. Settings is a plain `NSWindowController`-managed `NSWindow` instead.
+- **Local notifications default to a silent "None" alert style** for a newly-permissioned app in System Settings -- `UNUserNotificationCenter` reporting `authorizationStatus = .authorized` doesn't mean a banner will actually show; the per-app Alert Style (System Settings -> Notifications -> Lodestone) needs to be set to Banners or Alerts.
 
 ## Companion: mintmedia
 

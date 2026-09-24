@@ -1,0 +1,110 @@
+//
+//  SettingsView.swift
+//  Lodestone
+//
+//  Native reproduction of the old extension/popup.html dark theme and
+//  save flow (validate locally -> test connectivity live -> persist only
+//  on success -> show a link to Transmission's own web portal). No
+//  WebExtensions permission-request step exists here -- a native app has
+//  no per-origin permission model to negotiate, unlike the old popup.
+//
+
+import SwiftUI
+
+struct SettingsView: View {
+    @State private var host: String = Preferences.transmissionHost
+    @State private var auth: String = KeychainStore.load()
+    @State private var status: String = ""
+    @State private var isError: Bool = false
+    @State private var savedHost: String = Preferences.transmissionHost
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("Lodestone")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(Color(hex: 0xF2F3F5))
+
+            Text("Forward clicked magnet links to a remote Transmission instance.")
+                .font(.system(size: 12))
+                .foregroundColor(Color(hex: 0x8C9096))
+                .multilineTextAlignment(.center)
+
+            field(label: "Transmission host (host:port)", placeholder: "192.168.1.50:9091", text: $host)
+            field(label: "Authentication (user:pass, optional)", placeholder: "user:pass", text: $auth)
+
+            Button("Save", action: save)
+                .buttonStyle(.borderedProminent)
+                .tint(Color(hex: 0x3D6EA5))
+
+            Text(status)
+                .font(.system(size: 12))
+                .foregroundColor(isError ? Color(hex: 0xFF6B6B) : Color(hex: 0x9AA4B1))
+                .frame(minHeight: 14)
+                .multilineTextAlignment(.center)
+
+            if !savedHost.isEmpty {
+                Divider()
+                Link("Open Transmission Web Portal", destination: TransmissionClient.webURL(savedHost))
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(hex: 0x7FB2E0))
+            }
+        }
+        .padding(16)
+        .frame(width: 280)
+        .background(Color(hex: 0x182530))
+        .foregroundColor(Color(hex: 0xE8EAED))
+    }
+
+    private func field(label: String, placeholder: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(Color(hex: 0xC3C8CE))
+            TextField(placeholder, text: text)
+                .textFieldStyle(.plain)
+                .padding(7)
+                .background(Color(hex: 0x1F2F3D))
+                .cornerRadius(6)
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color(hex: 0x33475A)))
+        }
+    }
+
+    private func save() {
+        do {
+            try TransmissionClient.validateConfig(host: host, auth: auth)
+        } catch {
+            status = TransmissionError.text(for: error)
+            isError = true
+            return
+        }
+
+        status = "Checking connection…"
+        isError = false
+
+        Task {
+            do {
+                try await TransmissionClient.shared.testConnection(host: host, auth: auth)
+                Preferences.transmissionHost = host
+                KeychainStore.save(auth)
+                savedHost = host
+                status = "Saved."
+                isError = false
+            } catch {
+                status = TransmissionError.text(for: error)
+                isError = true
+            }
+        }
+    }
+}
+
+extension Color {
+    init(hex: UInt32) {
+        self.init(
+            .sRGB,
+            red: Double((hex >> 16) & 0xFF) / 255,
+            green: Double((hex >> 8) & 0xFF) / 255,
+            blue: Double(hex & 0xFF) / 255,
+            opacity: 1.0
+        )
+    }
+}
