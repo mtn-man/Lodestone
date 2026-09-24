@@ -25,7 +25,7 @@ struct SettingsView: View {
     /// The web-portal URL for the currently persisted host, or nil if none
     /// is configured. Derived from the saved host rather than tracked as a
     /// second copy of it, so the link is shown exactly when it resolves.
-    @State private var savedWebURL: URL? = SettingsView.persistedWebURL()
+    @State private var savedWebURL: URL? = Preferences.transmissionWebURL
     /// Set only when notification feedback won't be visible. Notifications
     /// are the app's only output, so that state otherwise leaves a working
     /// app that appears to do nothing, with no hint as to why.
@@ -132,10 +132,6 @@ struct SettingsView: View {
         let user = username.trimmingCharacters(in: .whitespacesAndNewlines)
         if user.isEmpty && password.isEmpty { return "" }
         return "\(user):\(password)"
-    }
-
-    private static func persistedWebURL() -> URL? {
-        try? TransmissionConfig(host: Preferences.transmissionHost, auth: "").webURL
     }
 
     private func save() {

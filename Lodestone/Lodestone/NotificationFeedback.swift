@@ -30,7 +30,30 @@ private final class NotificationPresenter: NSObject, UNUserNotificationCenterDel
     ) async -> UNNotificationPresentationOptions {
         [.banner, .list]
     }
+
+    /// Clicking a successful add opens Transmission's web portal, so the
+    /// notification is a route to the thing it is reporting rather than
+    /// just an acknowledgement.
+    ///
+    /// Only notifications carrying the portal flag respond. A failure has
+    /// none: the portal is on the host that just could not be reached, so
+    /// opening it would fail too, and pointing at it would misdirect.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        guard response.actionIdentifier == UNNotificationDefaultActionIdentifier,
+              response.notification.request.content.userInfo[opensPortalKey] != nil,
+              let url = Preferences.transmissionWebURL else { return }
+        NSWorkspace.shared.open(url)
+    }
 }
+
+/// Marks a notification as one whose click should open the web portal. The
+/// URL itself is not carried: a notification can sit in Notification Centre
+/// for hours, and the host may have changed by the time it is clicked, so
+/// the URL is resolved fresh on click.
+private let opensPortalKey = "opensWebPortal"
 
 enum NotificationFeedback {
     // Fetched per use rather than held in a static. UNUserNotificationCenter
@@ -70,6 +93,9 @@ enum NotificationFeedback {
         let content = UNMutableNotificationContent()
         content.title = "Lodestone"
         content.body = success ? "Added magnet to Transmission" : message
+        if success {
+            content.userInfo = [opensPortalKey: true]
+        }
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
         do {
             try await UNUserNotificationCenter.current().add(request)
