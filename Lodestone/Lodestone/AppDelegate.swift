@@ -12,7 +12,6 @@
 
 import Cocoa
 import CoreServices
-import UserNotifications
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {

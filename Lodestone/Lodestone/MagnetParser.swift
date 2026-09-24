@@ -29,7 +29,7 @@ struct MagnetInfo: Equatable {
 }
 
 nonisolated enum MagnetParser {
-    static let btihPrefix = "urn:btih:"
+    private static let btihPrefix = "urn:btih:"
 
     // Exact lengths, not minimums: parseHash accepts a 40-char hex SHA-1
     // (tr_sha1_from_string) or a 32-char base32 SHA-1 (parseBase32Hash),
@@ -97,10 +97,6 @@ nonisolated enum MagnetParser {
         let trackers = decodedItems.filter { $0.name == "tr" || $0.name.hasPrefix("tr.") }.count
 
         return MagnetInfo(uri: trimmed, btih: btih, dn: dn, trackers: trackers)
-    }
-
-    static func isValid(_ raw: String) -> Bool {
-        (try? parse(raw)) != nil
     }
 
     private static func isValidHash(_ hash: String) -> Bool {
