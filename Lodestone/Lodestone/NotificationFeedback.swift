@@ -17,8 +17,24 @@ import AppKit
 import Foundation
 import UserNotifications
 
+/// Without a delegate, `willPresent` defaults to suppressing a banner while
+/// the app is frontmost -- reasonable for an app you are looking at, wrong
+/// for this one, whose window tells you nothing about an add in flight. The
+/// reachable case is narrow (the Settings window is open, so Lodestone is
+/// active, and a magnet arrives) but the suppressed banner is the only
+/// report that add ever makes.
+private final class NotificationPresenter: NSObject, UNUserNotificationCenterDelegate {
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification
+    ) async -> UNNotificationPresentationOptions {
+        [.banner, .list]
+    }
+}
+
 enum NotificationFeedback {
     private static let center = UNUserNotificationCenter.current()
+    private static let presenter = NotificationPresenter()
 
     /// One-shot authorization request, awaited by every post.
     ///
@@ -32,8 +48,12 @@ enum NotificationFeedback {
         (try? await center.requestAuthorization(options: [.alert])) ?? false
     }
 
-    /// Starts the request at launch. The result is awaited later, by post.
-    static func requestAuthorization() {
+    /// Installs the presentation delegate and starts the authorization
+    /// request. Called from `applicationWillFinishLaunching`: the delegate
+    /// has to be in place before launching finishes, and starting the
+    /// request there gives it a head start on a magnet that launched the app.
+    static func start() {
+        center.delegate = presenter
         _ = authorization
     }
 

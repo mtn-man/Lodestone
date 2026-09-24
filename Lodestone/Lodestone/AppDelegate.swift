@@ -15,8 +15,11 @@ import CoreServices
 import UserNotifications
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        NotificationFeedback.start()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NotificationFeedback.requestAuthorization()
         claimMagnetHandler()
     }
 

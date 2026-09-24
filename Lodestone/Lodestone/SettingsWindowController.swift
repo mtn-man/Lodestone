@@ -33,7 +33,11 @@ final class SettingsWindowController: NSWindowController {
     }
 
     func show() {
-        NSApp.activate(ignoringOtherApps: true)
+        // activate() replaces activate(ignoringOtherApps:), deprecated in
+        // macOS 14. The old flag is implicit here: a click on this app's own
+        // menu bar item is exactly the user-initiated case the replacement
+        // honours, so there is nothing to force.
+        NSApp.activate()
         window?.makeKeyAndOrderFront(nil)
     }
 }
