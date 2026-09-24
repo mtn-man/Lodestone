@@ -27,10 +27,10 @@
   "action": {
     "default_title": "Lodestone",
     "default_icon": {
-      "16": "lib/icons/icon-16.png",
-      "19": "lib/icons/icon-19.png",
-      "32": "lib/icons/icon-32.png",
-      "38": "lib/icons/icon-38.png"
+      "16": "lib/icons/icon-toolbar-16.png",
+      "19": "lib/icons/icon-toolbar-19.png",
+      "32": "lib/icons/icon-toolbar-32.png",
+      "38": "lib/icons/icon-toolbar-38.png"
     }
   },
   "options_ui": {
