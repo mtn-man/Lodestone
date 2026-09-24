@@ -31,7 +31,7 @@ Lodestone/
     TransmissionConfig.swift      -- validated host + auth (the only place either is parsed)
     TransmissionClient.swift      -- RPC client (CSRF handshake, basic auth, 10s timeout)
     Preferences.swift             -- UserDefaults (host)
-    KeychainStore.swift           -- Keychain (auth credential)
+    KeychainStore.swift           -- Keychain (auth credential); both read and write report failure
     NotificationFeedback.swift    -- local notification on add success/failure
     MenuBarMenuView.swift         -- Settings.../Quit menu
     SettingsWindowController.swift / SettingsView.swift -- native settings window
@@ -56,6 +56,8 @@ xcodebuild test -project Lodestone/Lodestone.xcodeproj -scheme Lodestone -destin
 `xcodebuild test` prints `Executed 0 tests` at the end. That is the legacy XCTest counter, which does not see Swift Testing tests -- check the result-bundle summary, or Xcode's test navigator, for real counts.
 
 `MagnetParser.swift` is no longer a port of the old JS -- it is written against `libtransmission/magnet-metainfo.cc` (`tr_magnet_metainfo::parseMagnet`), since Lodestone forwards the URI to Transmission verbatim and so should accept exactly what Transmission accepts, no more and no less. The non-obvious parts of that contract, each annotated in the source: every query entry is scanned (not just the first `xt`), the `xt` key is matched exactly (`xt.1`/`xt.2` are *not* recognized, though `tr.1` is) and its `urn:btih:` prefix case-sensitively, the hash must be exactly 40 hex or 32 base32 characters, `xt` is compared percent-encoded while `dn`/`tr` are decoded, and a v2-only `urn:btmh:` link is rejected because upstream sets its `got_hash` flag only in the v1 branch.
+
+`KeychainStore` uses the file-based keychain, not the data-protection keychain (`kSecUseDataProtectionKeychain`). Switching would be the more modern choice, but it is a different store: an already-saved credential would become invisible and have to be re-entered, and it depends on entitlements this app only gets from a free-Apple-ID provisioning profile. Worth revisiting deliberately, not as a drive-by.
 
 `TransmissionConfig` is the one place the host and auth strings are interpreted. Constructing one either yields a usable `rpcURL`/`webURL`/`authHeader` or throws -- there is no fallback endpoint, deliberately: the previous code resolved an unparseable host (`::1:9091`, or anything with a space in it) to a literal host named `invalid`, which failed later as "could not reach transmission at ...", indistinguishable from a daemon that was simply down. Credentials typed into the host field are rejected rather than dropped, for the same reason. `TransmissionClient` takes a config rather than raw strings, so it has nothing left to validate.
 

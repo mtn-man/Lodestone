@@ -13,13 +13,28 @@ import SwiftUI
 
 struct SettingsView: View {
     @State private var host: String = Preferences.transmissionHost
-    @State private var auth: String = KeychainStore.load()
-    @State private var status: String = ""
-    @State private var isError: Bool = false
+    @State private var auth: String
+    @State private var status: String
+    @State private var isError: Bool
     /// The web-portal URL for the currently persisted host, or nil if none
     /// is configured. Derived from the saved host rather than tracked as a
     /// second copy of it, so the link is shown exactly when it resolves.
     @State private var savedWebURL: URL? = SettingsView.persistedWebURL()
+
+    init() {
+        // A failed keychain read must not present as "no credential set":
+        // the field would come up blank and the obvious reading is that it
+        // was never configured, which sends the user to the wrong problem.
+        do {
+            _auth = State(initialValue: try KeychainStore.load() ?? "")
+            _status = State(initialValue: "")
+            _isError = State(initialValue: false)
+        } catch {
+            _auth = State(initialValue: "")
+            _status = State(initialValue: TransmissionError.text(for: error))
+            _isError = State(initialValue: true)
+        }
+    }
 
     var body: some View {
         VStack(spacing: 12) {
@@ -92,15 +107,27 @@ struct SettingsView: View {
         Task {
             do {
                 try await TransmissionClient.shared.testConnection(config: config)
-                Preferences.transmissionHost = host
-                KeychainStore.save(auth)
-                savedWebURL = config.webURL
-                status = "Saved."
-                isError = false
             } catch {
                 status = TransmissionError.text(for: error)
                 isError = true
+                return
             }
+
+            // The credential is persisted before the host, so a keychain
+            // failure leaves the saved configuration as it was rather than
+            // stranding a new host next to a stale credential.
+            do {
+                try KeychainStore.save(auth)
+            } catch {
+                status = "Connected, but \(TransmissionError.text(for: error))"
+                isError = true
+                return
+            }
+
+            Preferences.transmissionHost = host
+            savedWebURL = config.webURL
+            status = "Saved."
+            isError = false
         }
     }
 }

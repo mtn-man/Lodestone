@@ -51,7 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let config: TransmissionConfig
             do {
                 config = try TransmissionConfig(
-                    host: Preferences.transmissionHost, auth: KeychainStore.load())
+                    host: Preferences.transmissionHost, auth: KeychainStore.load() ?? "")
             } catch {
                 NotificationFeedback.post(success: false, message: TransmissionError.text(for: error))
                 return
