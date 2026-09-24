@@ -19,14 +19,21 @@ final class SettingsWindowController: NSWindowController {
         // itself -- use the designated initializer with an explicit frame
         // so the window is guaranteed visible rather than possibly created
         // at zero size or off-screen.
+        let hosting = NSHostingController(rootView: SettingsView())
+        // Let the content drive the window height: the notification warning
+        // section appears asynchronously, after the window is already on
+        // screen, and a hardcoded height would clip it.
+        hosting.sizingOptions = [.preferredContentSize]
+
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 280, height: 360),
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 320),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
         )
-        window.title = "Lodestone"
-        window.contentViewController = NSHostingController(rootView: SettingsView())
+        // HIG: a single-pane settings window is titled "<App Name> Settings".
+        window.title = "Lodestone Settings"
+        window.contentViewController = hosting
         window.isReleasedWhenClosed = false
         window.center()
         self.init(window: window)

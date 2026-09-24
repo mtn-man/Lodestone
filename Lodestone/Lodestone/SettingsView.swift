@@ -2,109 +2,126 @@
 //  SettingsView.swift
 //  Lodestone
 //
-//  Native reproduction of the old extension/popup.html dark theme and
-//  save flow (validate locally -> test connectivity live -> persist only
-//  on success -> show a link to Transmission's own web portal). No
-//  WebExtensions permission-request step exists here -- a native app has
-//  no per-origin permission model to negotiate, unlike the old popup.
+//  A plain SwiftUI Form in the system appearance. This deliberately no
+//  longer reproduces the old extension/popup.html dark theme: that palette
+//  was a web popup's, hardcoded in hex, and it forced a dark window on a
+//  machine in Light Mode and overrode the user's accent colour. Every
+//  colour here is semantic, so the window follows the system.
+//
+//  The save flow is unchanged and is the reason this isn't a live-applying
+//  settings pane: validate locally -> test connectivity against the daemon
+//  -> persist only on success.
 //
 
 import SwiftUI
 
 struct SettingsView: View {
     @State private var host: String = Preferences.transmissionHost
-    @State private var auth: String
+    @State private var username: String
+    @State private var password: String
     @State private var status: String
     @State private var isError: Bool
+    @State private var isChecking: Bool = false
     /// The web-portal URL for the currently persisted host, or nil if none
     /// is configured. Derived from the saved host rather than tracked as a
     /// second copy of it, so the link is shown exactly when it resolves.
     @State private var savedWebURL: URL? = SettingsView.persistedWebURL()
-    /// Set only when notifications are denied. Notifications are the app's
-    /// only output, so a denied prompt otherwise leaves a working app that
-    /// appears to do nothing, with no hint as to why.
+    /// Set only when notification feedback won't be visible. Notifications
+    /// are the app's only output, so that state otherwise leaves a working
+    /// app that appears to do nothing, with no hint as to why.
     @State private var notificationWarning: String?
 
     init() {
         // A failed keychain read must not present as "no credential set":
-        // the field would come up blank and the obvious reading is that it
-        // was never configured, which sends the user to the wrong problem.
+        // the fields would come up blank and the obvious reading is that
+        // one was never configured, which sends the user to the wrong
+        // problem.
         do {
-            _auth = State(initialValue: try KeychainStore.load() ?? "")
+            let stored = try KeychainStore.load() ?? ""
+            let parts = Self.split(stored)
+            _username = State(initialValue: parts.user)
+            _password = State(initialValue: parts.password)
             _status = State(initialValue: "")
             _isError = State(initialValue: false)
         } catch {
-            _auth = State(initialValue: "")
+            _username = State(initialValue: "")
+            _password = State(initialValue: "")
             _status = State(initialValue: TransmissionError.text(for: error))
             _isError = State(initialValue: true)
         }
     }
 
     var body: some View {
-        VStack(spacing: 12) {
-            Text("Lodestone")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(Color(hex: 0xF2F3F5))
+        Form {
+            Section {
+                TextField("Host", text: $host, prompt: Text("192.168.1.50:9091"))
+                TextField("Username", text: $username, prompt: Text("Optional"))
+                SecureField("Password", text: $password, prompt: Text("Optional"))
+            } header: {
+                Text("Transmission Server")
+            } footer: {
+                Text("Magnet links you click are sent here instead of opening in a local torrent app.")
+                    .foregroundStyle(.secondary)
+            }
 
-            Text("Forward clicked magnet links to a remote Transmission instance.")
-                .font(.system(size: 12))
-                .foregroundColor(Color(hex: 0x8C9096))
-                .multilineTextAlignment(.center)
+            Section {
+                HStack(spacing: 8) {
+                    Button("Save", action: save)
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(isChecking || host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    if isChecking {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                    Spacer()
+                }
 
-            field(label: "Transmission host (host:port)", placeholder: "192.168.1.50:9091", text: $host)
-            field(label: "Authentication (user:pass, optional)", placeholder: "user:pass", text: $auth)
+                if !status.isEmpty {
+                    Text(status)
+                        .font(.callout)
+                        .foregroundStyle(isError ? Color.red : Color.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
-            Button("Save", action: save)
-                .buttonStyle(.borderedProminent)
-                .tint(Color(hex: 0x3D6EA5))
-
-            Text(status)
-                .font(.system(size: 12))
-                .foregroundColor(isError ? Color(hex: 0xFF6B6B) : Color(hex: 0x9AA4B1))
-                .frame(minHeight: 14)
-                .multilineTextAlignment(.center)
-
-            if let savedWebURL {
-                Divider()
-                Link("Open Transmission Web Portal", destination: savedWebURL)
-                    .font(.system(size: 11))
-                    .foregroundColor(Color(hex: 0x7FB2E0))
+                if let savedWebURL {
+                    Link(destination: savedWebURL) {
+                        Label("Open Transmission Web Portal", systemImage: "arrow.up.forward.app")
+                    }
+                }
             }
 
             if let notificationWarning {
-                Divider()
-                Text(notificationWarning)
-                    .font(.system(size: 11))
-                    .foregroundColor(Color(hex: 0xD9A441))
-                    .multilineTextAlignment(.center)
-                Button("Open Notification Settings") {
-                    NotificationFeedback.openNotificationSettings()
+                Section {
+                    Label(notificationWarning, systemImage: "bell.slash")
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button("Open Notification Settings…") {
+                        NotificationFeedback.openNotificationSettings()
+                    }
                 }
-                .buttonStyle(.link)
-                .font(.system(size: 11))
             }
         }
+        .formStyle(.grouped)
+        .frame(width: 420)
         .task {
             notificationWarning = await NotificationFeedback.unavailableReason()
         }
-        .padding(16)
-        .frame(width: 280)
-        .background(Color(hex: 0x182530))
-        .foregroundColor(Color(hex: 0xE8EAED))
     }
 
-    private func field(label: String, placeholder: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(hex: 0xC3C8CE))
-            TextField(placeholder, text: text)
-                .textFieldStyle(.plain)
-                .padding(7)
-                .background(Color(hex: 0x1F2F3D))
-                .cornerRadius(6)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color(hex: 0x33475A)))
-        }
+    /// The credential is stored as the single "user:pass" string that basic
+    /// auth wants, but presented as two fields because that is what a macOS
+    /// credential form looks like -- and because a password belongs in a
+    /// SecureField, not in plain text on screen. Splitting on the first
+    /// colon only keeps a colon-bearing password intact.
+    private static func split(_ auth: String) -> (user: String, password: String) {
+        guard let separator = auth.firstIndex(of: ":") else { return (auth, "") }
+        return (String(auth[..<separator]), String(auth[auth.index(after: separator)...]))
+    }
+
+    private var combinedAuth: String {
+        let user = username.trimmingCharacters(in: .whitespacesAndNewlines)
+        if user.isEmpty && password.isEmpty { return "" }
+        return "\(user):\(password)"
     }
 
     private static func persistedWebURL() -> URL? {
@@ -112,6 +129,7 @@ struct SettingsView: View {
     }
 
     private func save() {
+        let auth = combinedAuth
         let config: TransmissionConfig
         do {
             config = try TransmissionConfig(host: host, auth: auth)
@@ -123,8 +141,11 @@ struct SettingsView: View {
 
         status = "Checking connection…"
         isError = false
+        isChecking = true
 
         Task {
+            defer { isChecking = false }
+
             do {
                 try await TransmissionClient.shared.testConnection(config: config)
             } catch {
@@ -149,17 +170,5 @@ struct SettingsView: View {
             status = "Saved."
             isError = false
         }
-    }
-}
-
-extension Color {
-    init(hex: UInt32) {
-        self.init(
-            .sRGB,
-            red: Double((hex >> 16) & 0xFF) / 255,
-            green: Double((hex >> 8) & 0xFF) / 255,
-            blue: Double(hex & 0xFF) / 255,
-            opacity: 1.0
-        )
     }
 }
