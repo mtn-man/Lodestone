@@ -103,6 +103,16 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .frame(width: 420)
+        // Captured once (the scene reuses one NSWindow), then raised on
+        // every open -- onAppear fires each time, makeNSView does not.
+        .background(WindowAccessor { window in
+            SettingsWindowRaiser.window = window
+            SettingsWindowRaiser.raise()
+        })
+        .onAppear {
+            // The window is not attached yet at onAppear time.
+            DispatchQueue.main.async { SettingsWindowRaiser.raise() }
+        }
         .task {
             notificationWarning = await NotificationFeedback.unavailableReason()
         }
@@ -176,4 +186,39 @@ struct SettingsView: View {
             isError = false
         }
     }
+}
+
+/// Brings the Settings window forward.
+///
+/// An accessory app is never activated on its own behalf, and from the
+/// Settings scene's built-in Command-comma it is not granted activation at
+/// all: NSApp.activate() returns having done nothing and the window is
+/// restored to its saved frame behind whatever is in front. With no Dock
+/// icon there is then no way to reach it. orderFrontRegardless raises it
+/// without needing a grant; activate() is still requested so the window
+/// takes focus in the cases where that is allowed.
+private enum SettingsWindowRaiser {
+    static weak var window: NSWindow?
+
+    static func raise() {
+        NSApp.activate()
+        window?.orderFrontRegardless()
+    }
+}
+
+/// Runs a closure with the NSWindow hosting this view, once it exists.
+/// SwiftUI offers no first-class way to reach it. Note makeNSView runs only
+/// when the representable is first created, not on every reopen.
+private struct WindowAccessor: NSViewRepresentable {
+    let onWindow: (NSWindow) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            if let window = view.window { onWindow(window) }
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }

@@ -20,7 +20,6 @@
 		CEFB639930647C9E00D0169D /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB639830647C9E00D0169D /* KeychainStore.swift */; };
 		CEFB639B30647C9E00D0169D /* NotificationFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB639A30647C9E00D0169D /* NotificationFeedback.swift */; };
 		CEFB639D30647C9E00D0169D /* MenuBarMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB639C30647C9E00D0169D /* MenuBarMenuView.swift */; };
-		CEFB639F30647C9E00D0169D /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB639E30647C9E00D0169D /* SettingsWindowController.swift */; };
 		CEFB63A130647C9E00D0169D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB63A030647C9E00D0169D /* SettingsView.swift */; };
 		CEFB63B630647C9E00D0169D /* MagnetParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB63B130647C9E00D0169D /* MagnetParserTests.swift */; };
 		CEFB63B730647C9E00D0169D /* MagnetParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB639230647C9E00D0169D /* MagnetParser.swift */; };
@@ -40,7 +39,6 @@
 		CEFB639830647C9E00D0169D /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		CEFB639A30647C9E00D0169D /* NotificationFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationFeedback.swift; sourceTree = "<group>"; };
 		CEFB639C30647C9E00D0169D /* MenuBarMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarMenuView.swift; sourceTree = "<group>"; };
-		CEFB639E30647C9E00D0169D /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		CEFB63A030647C9E00D0169D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		CEFB63B030647C9E00D0169D /* LodestoneTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LodestoneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CEFB63B130647C9E00D0169D /* MagnetParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagnetParserTests.swift; sourceTree = "<group>"; };
@@ -90,7 +88,6 @@
 				CEFB639830647C9E00D0169D /* KeychainStore.swift */,
 				CEFB639A30647C9E00D0169D /* NotificationFeedback.swift */,
 				CEFB639C30647C9E00D0169D /* MenuBarMenuView.swift */,
-				CEFB639E30647C9E00D0169D /* SettingsWindowController.swift */,
 				CEFB63A030647C9E00D0169D /* SettingsView.swift */,
 				CEFB636230647C9D00D0169D /* Assets.xcassets */,
 				CEFB636430647C9D00D0169D /* Info.plist */,
@@ -203,7 +200,6 @@
 				CEFB639930647C9E00D0169D /* KeychainStore.swift in Sources */,
 				CEFB639B30647C9E00D0169D /* NotificationFeedback.swift in Sources */,
 				CEFB639D30647C9E00D0169D /* MenuBarMenuView.swift in Sources */,
-				CEFB639F30647C9E00D0169D /* SettingsWindowController.swift in Sources */,
 				CEFB63A130647C9E00D0169D /* SettingsView.swift in Sources */,
 			);
 		};
