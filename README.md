@@ -28,6 +28,7 @@ Lodestone/
     LodestoneApp.swift            -- @main SwiftUI App, MenuBarExtra scene
     AppDelegate.swift             -- receives magnet: opens, claims default handler
     MagnetParser.swift            -- magnet: URI parsing/validation
+    TransmissionConfig.swift      -- validated host + auth (the only place either is parsed)
     TransmissionClient.swift      -- RPC client (CSRF handshake, basic auth, 10s timeout)
     Preferences.swift             -- UserDefaults (host)
     KeychainStore.swift           -- Keychain (auth credential)
@@ -47,16 +48,18 @@ Run the tests with Cmd+U in Xcode, or:
 xcodebuild test -project Lodestone/Lodestone.xcodeproj -scheme Lodestone -destination 'platform=macOS'
 ```
 
-`LodestoneTests` covers `MagnetParser` (30 cases, written with Swift Testing). Two things about it are deliberate and worth knowing before you extend it:
+`LodestoneTests` covers `MagnetParser` and `TransmissionConfig`, written with Swift Testing. Two things about it are deliberate and worth knowing before you extend it:
 
-- **The bundle has no test host.** The default Xcode template would set `TEST_HOST` to the app, which launches it to inject the tests -- and `applicationDidFinishLaunching` calls `LSSetDefaultHandlerForURLScheme`, so every test run would reassign the *system-wide* `magnet:` handler on the developer's machine. `MagnetParser.swift` is a direct member of the test target instead, which works because it depends on nothing beyond Foundation. A test for anything that touches AppKit, Keychain or the network will need a different arrangement.
+- **The bundle has no test host.** The default Xcode template would set `TEST_HOST` to the app, which launches it to inject the tests -- and `applicationDidFinishLaunching` calls `LSSetDefaultHandlerForURLScheme`, so every test run would reassign the *system-wide* `magnet:` handler on the developer's machine. `MagnetParser.swift`, `TransmissionConfig.swift` and `TransmissionClient.swift` are direct members of the test target instead, which works because none of them touch anything beyond Foundation at parse time. A test for anything that touches AppKit, Keychain or the network will need a different arrangement.
 - **The reject cases matter as much as the accept cases.** Several are links that look valid but which Transmission itself refuses; "fixing" the parser to accept them would only move the failure to the daemon.
 
 `xcodebuild test` prints `Executed 0 tests` at the end. That is the legacy XCTest counter, which does not see Swift Testing tests -- check the result-bundle summary, or Xcode's test navigator, for real counts.
 
 `MagnetParser.swift` is no longer a port of the old JS -- it is written against `libtransmission/magnet-metainfo.cc` (`tr_magnet_metainfo::parseMagnet`), since Lodestone forwards the URI to Transmission verbatim and so should accept exactly what Transmission accepts, no more and no less. The non-obvious parts of that contract, each annotated in the source: every query entry is scanned (not just the first `xt`), the `xt` key is matched exactly (`xt.1`/`xt.2` are *not* recognized, though `tr.1` is) and its `urn:btih:` prefix case-sensitively, the hash must be exactly 40 hex or 32 base32 characters, `xt` is compared percent-encoded while `dn`/`tr` are decoded, and a v2-only `urn:btmh:` link is rejected because upstream sets its `got_hash` flag only in the v1 branch.
 
-`TransmissionClient.swift` is still a direct port of the old `extension/lib/transmission-client.js`; those deleted `tests/*.test.js` fixtures remain the right behavioral spec for it if a Swift XCTest suite gets added later.
+`TransmissionConfig` is the one place the host and auth strings are interpreted. Constructing one either yields a usable `rpcURL`/`webURL`/`authHeader` or throws -- there is no fallback endpoint, deliberately: the previous code resolved an unparseable host (`::1:9091`, or anything with a space in it) to a literal host named `invalid`, which failed later as "could not reach transmission at ...", indistinguishable from a daemon that was simply down. Credentials typed into the host field are rejected rather than dropped, for the same reason. `TransmissionClient` takes a config rather than raw strings, so it has nothing left to validate.
+
+The RPC mechanics in `TransmissionClient.swift` are still a direct port of the old `extension/lib/transmission-client.js`; those deleted `tests/*.test.js` fixtures remain the right behavioral spec for the request/retry path if a suite gets added for it later.
 
 ## Gotchas
 

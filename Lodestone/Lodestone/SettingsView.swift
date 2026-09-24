@@ -16,7 +16,10 @@ struct SettingsView: View {
     @State private var auth: String = KeychainStore.load()
     @State private var status: String = ""
     @State private var isError: Bool = false
-    @State private var savedHost: String = Preferences.transmissionHost
+    /// The web-portal URL for the currently persisted host, or nil if none
+    /// is configured. Derived from the saved host rather than tracked as a
+    /// second copy of it, so the link is shown exactly when it resolves.
+    @State private var savedWebURL: URL? = SettingsView.persistedWebURL()
 
     var body: some View {
         VStack(spacing: 12) {
@@ -42,9 +45,9 @@ struct SettingsView: View {
                 .frame(minHeight: 14)
                 .multilineTextAlignment(.center)
 
-            if !savedHost.isEmpty {
+            if let savedWebURL {
                 Divider()
-                Link("Open Transmission Web Portal", destination: TransmissionClient.webURL(savedHost))
+                Link("Open Transmission Web Portal", destination: savedWebURL)
                     .font(.system(size: 11))
                     .foregroundColor(Color(hex: 0x7FB2E0))
             }
@@ -69,9 +72,14 @@ struct SettingsView: View {
         }
     }
 
+    private static func persistedWebURL() -> URL? {
+        try? TransmissionConfig(host: Preferences.transmissionHost, auth: "").webURL
+    }
+
     private func save() {
+        let config: TransmissionConfig
         do {
-            try TransmissionClient.validateConfig(host: host, auth: auth)
+            config = try TransmissionConfig(host: host, auth: auth)
         } catch {
             status = TransmissionError.text(for: error)
             isError = true
@@ -83,10 +91,10 @@ struct SettingsView: View {
 
         Task {
             do {
-                try await TransmissionClient.shared.testConnection(host: host, auth: auth)
+                try await TransmissionClient.shared.testConnection(config: config)
                 Preferences.transmissionHost = host
                 KeychainStore.save(auth)
-                savedHost = host
+                savedWebURL = config.webURL
                 status = "Saved."
                 isError = false
             } catch {

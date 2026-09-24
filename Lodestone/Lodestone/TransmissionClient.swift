@@ -27,47 +27,14 @@ actor TransmissionClient {
 
     private var cachedSessionID: String = ""
 
-    private static func hostURL(_ hostInput: String, path: String) -> URL {
-        let host = hostInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        let raw = host.contains("://") ? host : "http://\(host)"
-        if let comps = URLComponents(string: raw), let h = comps.host, !h.isEmpty {
-            let scheme = comps.scheme ?? "http"
-            let port = comps.port.map { ":\($0)" } ?? ""
-            if let url = URL(string: "\(scheme)://\(h)\(port)\(path)") {
-                return url
-            }
-        }
-        // Never throws -- falls back to naive concatenation, matching the
-        // JS version's try/catch fallback behavior exactly.
-        return URL(string: "http://\(host)\(path)") ?? URL(string: "http://invalid\(path)")!
-    }
-
-    nonisolated static func rpcURL(_ host: String) -> URL { hostURL(host, path: "/transmission/rpc") }
-    nonisolated static func webURL(_ host: String) -> URL { hostURL(host, path: "/transmission/web/") }
-
-    nonisolated static func validateConfig(host: String, auth: String) throws {
-        guard !host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw TransmissionError.message("transmission host is empty")
-        }
-        let trimmedAuth = auth.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedAuth.isEmpty && !trimmedAuth.contains(":") {
-            throw TransmissionError.message("transmission auth must be in \"user:pass\" form")
-        }
-    }
-
     private func rpcCall(
         method: String,
         arguments: [String: Any],
-        host: String,
-        auth: String,
+        config: TransmissionConfig,
         timeout: TimeInterval
     ) async throws -> [String: Any] {
-        let url = Self.rpcURL(host)
+        let url = config.rpcURL
         let body = try JSONSerialization.data(withJSONObject: ["method": method, "arguments": arguments])
-        let trimmedAuth = auth.trimmingCharacters(in: .whitespacesAndNewlines)
-        let authHeader: String? = trimmedAuth.isEmpty
-            ? nil
-            : "Basic \(Data(trimmedAuth.utf8).base64EncodedString())"
 
         func doFetch(sessionID: String) async throws -> (Data, HTTPURLResponse) {
             var request = URLRequest(url: url)
@@ -77,7 +44,7 @@ actor TransmissionClient {
             if !sessionID.isEmpty {
                 request.setValue(sessionID, forHTTPHeaderField: "X-Transmission-Session-Id")
             }
-            if let authHeader {
+            if let authHeader = config.authHeader {
                 request.setValue(authHeader, forHTTPHeaderField: "Authorization")
             }
             request.httpBody = body
@@ -110,24 +77,22 @@ actor TransmissionClient {
         return (json["arguments"] as? [String: Any]) ?? [:]
     }
 
-    func addMagnet(uri: String, host: String, auth: String, timeout: TimeInterval = TransmissionClient.defaultTimeout) async throws {
-        try Self.validateConfig(host: host, auth: auth)
+    func addMagnet(uri: String, config: TransmissionConfig, timeout: TimeInterval = TransmissionClient.defaultTimeout) async throws {
         do {
-            _ = try await rpcCall(method: "torrent-add", arguments: ["filename": uri], host: host, auth: auth, timeout: timeout)
+            _ = try await rpcCall(method: "torrent-add", arguments: ["filename": uri], config: config, timeout: timeout)
         } catch {
-            throw TransmissionError.message("transmission add failed (host=\(host)): \(TransmissionError.text(for: error))")
+            throw TransmissionError.message("transmission add failed (host=\(config.host)): \(TransmissionError.text(for: error))")
         }
     }
 
-    func testConnection(host: String, auth: String, timeout: TimeInterval = TransmissionClient.defaultTimeout) async throws {
-        try Self.validateConfig(host: host, auth: auth)
+    func testConnection(config: TransmissionConfig, timeout: TimeInterval = TransmissionClient.defaultTimeout) async throws {
         do {
-            _ = try await rpcCall(method: "session-get", arguments: [:], host: host, auth: auth, timeout: timeout)
+            _ = try await rpcCall(method: "session-get", arguments: [:], config: config, timeout: timeout)
         } catch {
             if let urlError = error as? URLError, urlError.code == .timedOut {
-                throw TransmissionError.message("could not reach transmission at \(host): timed out -- try a different address")
+                throw TransmissionError.message("could not reach transmission at \(config.host): timed out -- try a different address")
             }
-            throw TransmissionError.message("could not reach transmission at \(host): \(TransmissionError.text(for: error))")
+            throw TransmissionError.message("could not reach transmission at \(config.host): \(TransmissionError.text(for: error))")
         }
     }
 }

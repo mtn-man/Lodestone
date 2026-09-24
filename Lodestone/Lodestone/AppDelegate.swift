@@ -48,10 +48,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 NotificationFeedback.post(success: false, message: "Not a valid magnet link")
                 return
             }
-            let host = Preferences.transmissionHost
-            let auth = KeychainStore.load()
+            let config: TransmissionConfig
             do {
-                try await TransmissionClient.shared.addMagnet(uri: info.uri, host: host, auth: auth)
+                config = try TransmissionConfig(
+                    host: Preferences.transmissionHost, auth: KeychainStore.load())
+            } catch {
+                NotificationFeedback.post(success: false, message: TransmissionError.text(for: error))
+                return
+            }
+            do {
+                try await TransmissionClient.shared.addMagnet(uri: info.uri, config: config)
                 NotificationFeedback.post(success: true, message: "")
             } catch {
                 NotificationFeedback.post(success: false, message: TransmissionError.text(for: error))
