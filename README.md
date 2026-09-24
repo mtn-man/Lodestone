@@ -22,7 +22,7 @@ For quick iteration without Xcode: Safari Settings > Developer > Add Temporary E
 
 ## Configure
 
-Toolbar popup (click the Lodestone icon): `transmission_host` (`host:port`), optional `transmission_auth` (`user:pass`). Save triggers a one-time per-host permission prompt (dynamic `optional_host_permissions`, not a blanket grant).
+Toolbar popup (click the Lodestone icon): `transmission_host` (`host:port`), optional `transmission_auth` (`user:pass`). Save triggers a one-time per-host permission prompt (dynamic `optional_host_permissions`, not a blanket grant), then a live RPC connectivity check -- an unreachable host or bad auth is rejected with an error instead of being saved silently. Once a host is saved, the popup also shows a link to Transmission's own web portal (`http://<host>/transmission/web/`).
 
 ## Layout
 

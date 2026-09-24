@@ -13,6 +13,7 @@
     font: 13px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
     background: #182530;
     color: #e8eaed;
+    text-align: center;
   }
   h1 {
     margin: 0 0 4px;
@@ -43,6 +44,7 @@
     background: #1f2f3d;
     border: 1px solid #33475a;
     border-radius: 6px;
+    text-align: center;
   }
   input::placeholder { color: #6b7480; }
   input:focus {
@@ -70,21 +72,36 @@
     color: #9aa4b1;
   }
   #status.error { color: #ff6b6b; }
+  #web-link-wrap {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #253a4d;
+  }
+  #web-link {
+    display: block;
+    font-size: 11px;
+    color: #7fb2e0;
+    text-decoration: none;
+  }
+  #web-link:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
   <h1>Lodestone</h1>
-  <p class="tagline">Forward magnet links to a remote Transmission daemon.</p>
+  <p class="tagline">Forward clicked magnet links to a remote Transmission instance.</p>
   <form id="options-form">
     <label for="host">Transmission host (host:port)</label>
     <input id="host" type="text" placeholder="192.168.1.50:9091" required>
 
-    <label for="auth">Auth (user:pass, optional)</label>
+    <label for="auth">Authentication (user:pass, optional)</label>
     <input id="auth" type="text" placeholder="user:pass">
 
     <button type="submit">Save</button>
   </form>
   <div id="status"></div>
+  <div id="web-link-wrap" hidden>
+    <a id="web-link" href="#" target="_blank" rel="noopener noreferrer"></a>
+  </div>
   <script src="lib/transmission-client.js"></script>
   <script src="popup.js"></script>
 </body>

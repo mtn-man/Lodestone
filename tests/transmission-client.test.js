@@ -2,8 +2,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   buildRpcUrl,
+  buildWebUrl,
   validateTransmissionConfig,
   addMagnet,
+  testConnection,
   __resetSessionCache,
 } = require('../extension/lib/transmission-client.js');
 
@@ -32,6 +34,18 @@ test('buildRpcUrl normalizes host input', () => {
   ];
   for (const [host, want] of cases) {
     assert.equal(buildRpcUrl(host), want, `buildRpcUrl(${host})`);
+  }
+});
+
+test('buildWebUrl normalizes host input to the web portal path', () => {
+  const cases = [
+    ['localhost:9091', 'http://localhost:9091/transmission/web/'],
+    ['192.0.2.10:9091', 'http://192.0.2.10:9091/transmission/web/'],
+    ['localhost:9091/transmission/rpc', 'http://localhost:9091/transmission/web/'],
+    ['https://localhost:9091', 'https://localhost:9091/transmission/web/'],
+  ];
+  for (const [host, want] of cases) {
+    assert.equal(buildWebUrl(host), want, `buildWebUrl(${host})`);
   }
 });
 
@@ -110,4 +124,69 @@ test('addMagnet rejects when host is missing', async () => {
     addMagnet('magnet:?xt=urn:btih:12345678', { host: '' }),
     /transmission host is empty/
   );
+});
+
+test('testConnection succeeds against a reachable host', async () => {
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, body: JSON.parse(init.body) });
+    return fakeResponse({ status: 200, body: '{"result":"success","arguments":{}}' });
+  };
+  try {
+    await testConnection('localhost:9091', '');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].body.method, 'session-get');
+});
+
+test('testConnection rejects with a clear message when the host is unreachable', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    throw new Error('fetch failed');
+  };
+  try {
+    await assert.rejects(
+      testConnection('192.0.2.10:9091', ''),
+      /could not reach transmission at 192\.0\.2\.10:9091: fetch failed/
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('testConnection rejects on a non-200 status (e.g. bad auth)', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => fakeResponse({ status: 401, body: 'Unauthorized' });
+  try {
+    await assert.rejects(
+      testConnection('localhost:9091', 'user:wrongpass'),
+      /could not reach transmission.*unexpected status 401: Unauthorized/
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('testConnection rejects when host is missing', async () => {
+  await assert.rejects(testConnection('', ''), /transmission host is empty/);
+});
+
+test('testConnection gives a friendly message on timeout', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    const err = new Error('Fetch is aborted');
+    err.name = 'AbortError';
+    throw err;
+  };
+  try {
+    await assert.rejects(
+      testConnection('192.0.2.10:9091', ''),
+      /could not reach transmission at 192\.0\.2\.10:9091: timed out -- try a different address/
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

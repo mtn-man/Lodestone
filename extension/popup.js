@@ -1,12 +1,14 @@
 (function () {
   'use strict';
 
-  const { validateTransmissionConfig, buildRpcUrl } = self.Lodestone;
+  const { validateTransmissionConfig, buildRpcUrl, buildWebUrl, testConnection } = self.Lodestone;
 
   const hostInput = document.getElementById('host');
   const authInput = document.getElementById('auth');
   const statusEl = document.getElementById('status');
   const form = document.getElementById('options-form');
+  const webLinkWrap = document.getElementById('web-link-wrap');
+  const webLink = document.getElementById('web-link');
 
   // Match patterns can't include a port (the WebExtensions permission model
   // ignores ports entirely), so the pattern covers the host only -- the
@@ -21,6 +23,16 @@
     statusEl.classList.toggle('error', Boolean(isError));
   }
 
+  function updateWebLink(host) {
+    if (!host) {
+      webLinkWrap.hidden = true;
+      return;
+    }
+    webLink.href = buildWebUrl(host);
+    webLink.textContent = 'Open Transmission Web Portal';
+    webLinkWrap.hidden = false;
+  }
+
   let loadedHost = '';
 
   async function loadSaved() {
@@ -29,6 +41,7 @@
     hostInput.value = transmission_host;
     authInput.value = transmission_auth;
     loadedHost = transmission_host;
+    updateWebLink(loadedHost);
   }
 
   function finishSave(host, auth, oldHost, newPattern) {
@@ -42,6 +55,15 @@
           setStatus(`Permission to reach ${newPattern} was denied -- settings not saved.`, true);
           return;
         }
+
+        setStatus('Checking connection...', false);
+        try {
+          await testConnection(host, auth);
+        } catch (err) {
+          setStatus(err.message, true);
+          return;
+        }
+
         if (oldHost && oldHost !== host) {
           const oldPattern = originPatternFor(oldHost);
           if (oldPattern !== newPattern) {
@@ -50,6 +72,7 @@
         }
         await browser.storage.local.set({ transmission_host: host, transmission_auth: auth });
         loadedHost = host;
+        updateWebLink(loadedHost);
         setStatus('Saved.', false);
       },
       (err) => {

@@ -2,18 +2,27 @@
   'use strict';
 
   let cachedSessionId = '';
+  const DEFAULT_TIMEOUT_MS = 10000;
 
-  function buildRpcUrl(hostInput) {
+  function buildHostUrl(hostInput, path) {
     const host = (hostInput ?? '').trim();
     const raw = host.includes('://') ? host : `http://${host}`;
     try {
       const u = new URL(raw);
       if (!u.host) throw new Error('empty host');
       const scheme = u.protocol || 'http:';
-      return `${scheme}//${u.host}/transmission/rpc`;
+      return `${scheme}//${u.host}${path}`;
     } catch {
-      return `http://${host}/transmission/rpc`;
+      return `http://${host}${path}`;
     }
+  }
+
+  function buildRpcUrl(hostInput) {
+    return buildHostUrl(hostInput, '/transmission/rpc');
+  }
+
+  function buildWebUrl(hostInput) {
+    return buildHostUrl(hostInput, '/transmission/web/');
   }
 
   function validateTransmissionConfig(host, auth) {
@@ -61,7 +70,7 @@
     return data.arguments;
   }
 
-  async function addMagnet(uri, { host, auth, timeoutMs = 10000 } = {}) {
+  async function addMagnet(uri, { host, auth, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
     validateTransmissionConfig(host, auth);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -74,11 +83,38 @@
     }
   }
 
+  // Idempotent RPC call used purely to confirm the host is reachable and,
+  // if auth is set, that it's accepted -- used to validate a host before
+  // it's saved, so a dormant/wrong IP is rejected up front instead of
+  // failing silently the next time a magnet link is clicked.
+  async function testConnection(host, auth, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+    validateTransmissionConfig(host, auth);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      await rpcCall('session-get', {}, { host, auth, signal: controller.signal });
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        throw new Error(`could not reach transmission at ${host}: timed out -- try a different address`);
+      }
+      throw new Error(`could not reach transmission at ${host}: ${err.message}`);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   function __resetSessionCache() {
     cachedSessionId = '';
   }
 
-  const api = { buildRpcUrl, validateTransmissionConfig, addMagnet, __resetSessionCache };
+  const api = {
+    buildRpcUrl,
+    buildWebUrl,
+    validateTransmissionConfig,
+    addMagnet,
+    testConnection,
+    __resetSessionCache,
+  };
 
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = api;
