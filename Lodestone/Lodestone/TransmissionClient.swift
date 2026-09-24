@@ -14,11 +14,6 @@ enum TransmissionError: Error, LocalizedError {
         if case .message(let m) = self { return m }
         return nil
     }
-
-    static func text(for error: Error) -> String {
-        if let e = error as? TransmissionError, case .message(let m) = e { return m }
-        return error.localizedDescription
-    }
 }
 
 actor TransmissionClient {
@@ -103,7 +98,7 @@ actor TransmissionClient {
         do {
             try await rpcCall(method: "torrent-add", arguments: TorrentAdd(filename: uri), config: config, timeout: timeout)
         } catch {
-            throw TransmissionError.message("transmission add failed (host=\(config.host)): \(TransmissionError.text(for: error))")
+            throw TransmissionError.message("transmission add failed (host=\(config.host)): \(error.localizedDescription)")
         }
     }
 
@@ -114,7 +109,7 @@ actor TransmissionClient {
             if let urlError = error as? URLError, urlError.code == .timedOut {
                 throw TransmissionError.message("could not reach transmission at \(config.host): timed out -- try a different address")
             }
-            throw TransmissionError.message("could not reach transmission at \(config.host): \(TransmissionError.text(for: error))")
+            throw TransmissionError.message("could not reach transmission at \(config.host): \(error.localizedDescription)")
         }
     }
 }

@@ -56,14 +56,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 config = try TransmissionConfig(
                     host: Preferences.transmissionHost, auth: KeychainStore.load() ?? "")
             } catch {
-                await NotificationFeedback.post(success: false, message: TransmissionError.text(for: error))
+                await NotificationFeedback.post(success: false, message: error.localizedDescription)
                 return
             }
             do {
                 try await TransmissionClient.shared.addMagnet(uri: info.uri, config: config)
                 await NotificationFeedback.post(success: true, message: "")
             } catch {
-                await NotificationFeedback.post(success: false, message: TransmissionError.text(for: error))
+                await NotificationFeedback.post(success: false, message: error.localizedDescription)
             }
         }
     }

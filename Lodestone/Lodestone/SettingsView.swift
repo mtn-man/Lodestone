@@ -46,7 +46,7 @@ struct SettingsView: View {
         } catch {
             _username = State(initialValue: "")
             _password = State(initialValue: "")
-            _status = State(initialValue: TransmissionError.text(for: error))
+            _status = State(initialValue: error.localizedDescription)
             _isError = State(initialValue: true)
         }
     }
@@ -134,7 +134,7 @@ struct SettingsView: View {
         do {
             config = try TransmissionConfig(host: host, auth: auth)
         } catch {
-            status = TransmissionError.text(for: error)
+            status = error.localizedDescription
             isError = true
             return
         }
@@ -154,7 +154,7 @@ struct SettingsView: View {
             do {
                 try await TransmissionClient.shared.testConnection(config: config)
             } catch {
-                status = TransmissionError.text(for: error)
+                status = error.localizedDescription
                 isError = true
                 return
             }
@@ -165,7 +165,7 @@ struct SettingsView: View {
             do {
                 try KeychainStore.save(auth)
             } catch {
-                status = "Connected, but \(TransmissionError.text(for: error))"
+                status = "Connected, but \(error.localizedDescription)"
                 isError = true
                 return
             }
