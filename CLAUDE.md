@@ -6,9 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working in this
 
 Lodestone is a Safari Web Extension: intercept a clicked (or right-clicked) `magnet:` link in Safari and forward it to a remote Transmission daemon over its JSON-RPC endpoint, instead of letting Safari try to hand it to a local torrent client. Personal, open-source tool -- no App Store distribution planned.
 
-**Status: packaged, signed, and running persistently in Safari.** The `extension/` source (manifest, background/content scripts, settings popup, Transmission RPC client, magnet-link validation, Node unit tests) is committed and validated end-to-end against a real Transmission daemon -- click-to-add and right-click-to-add both work. It's been run through `xcrun safari-web-extension-packager`, producing `Lodestone/Lodestone.xcodeproj` (also committed, so others can build their own copy), built and self-signed locally with a free Apple ID team. See `README.md` for build/install/usage details, file layout, and known gotchas.
+**Status: packaged, signed, and installed as a permanent app.** The `extension/` source (manifest, background/content scripts, settings popup, Transmission RPC client, magnet-link validation, Node unit tests) is committed and validated end-to-end against a real Transmission daemon -- click-to-add and right-click-to-add both work. It's been run through `xcrun safari-web-extension-packager`, producing `Lodestone/Lodestone.xcodeproj` (also committed, so others can build their own copy), built and self-signed locally with a free Apple ID team, then archived (Product > Archive > Distribute App > Custom > Copy App) and installed at `/Applications/Lodestone.app` -- no longer running from Xcode's Debug build. See `README.md` for build/install/usage details, file layout, and known gotchas.
 
-**Open items:** currently runs from Xcode's Debug build (DerivedData), not a permanent `/Applications` install (would need Product > Archive); the right-click context menu shows on all links, not just magnet ones (documented Safari limitation, see README).
+**Open items:** the right-click context menu shows on all links, not just magnet ones (documented Safari limitation, see README).
+
+**Note on future dev iteration:** running Debug builds from Xcode (Cmd+R) again for development regenerates a second `Lodestone.app` in DerivedData with the same bundle identifier as the `/Applications` copy, which can confuse Safari/LaunchServices about which one is active. After a dev session, quit the Debug copy and relaunch `/Applications/Lodestone.app` to make it authoritative again. To ship a real change: edit -> Debug-run to test -> Archive -> Distribute App -> Copy App -> overwrite `/Applications/Lodestone.app`.
 
 ## Why this exists
 
