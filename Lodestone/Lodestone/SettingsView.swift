@@ -20,6 +20,10 @@ struct SettingsView: View {
     /// is configured. Derived from the saved host rather than tracked as a
     /// second copy of it, so the link is shown exactly when it resolves.
     @State private var savedWebURL: URL? = SettingsView.persistedWebURL()
+    /// Set only when notifications are denied. Notifications are the app's
+    /// only output, so a denied prompt otherwise leaves a working app that
+    /// appears to do nothing, with no hint as to why.
+    @State private var notificationWarning: String?
 
     init() {
         // A failed keychain read must not present as "no credential set":
@@ -66,6 +70,22 @@ struct SettingsView: View {
                     .font(.system(size: 11))
                     .foregroundColor(Color(hex: 0x7FB2E0))
             }
+
+            if let notificationWarning {
+                Divider()
+                Text(notificationWarning)
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(hex: 0xD9A441))
+                    .multilineTextAlignment(.center)
+                Button("Open Notification Settings") {
+                    NotificationFeedback.openNotificationSettings()
+                }
+                .buttonStyle(.link)
+                .font(.system(size: 11))
+            }
+        }
+        .task {
+            notificationWarning = await NotificationFeedback.unavailableReason()
         }
         .padding(16)
         .frame(width: 280)

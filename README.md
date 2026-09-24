@@ -32,7 +32,7 @@ Lodestone/
     TransmissionClient.swift      -- RPC client (CSRF handshake, basic auth, 10s timeout)
     Preferences.swift             -- UserDefaults (host)
     KeychainStore.swift           -- Keychain (auth credential); both read and write report failure
-    NotificationFeedback.swift    -- local notification on add success/failure
+    NotificationFeedback.swift    -- local notification on add success/failure; reports when it can't be seen
     MenuBarMenuView.swift         -- Settings.../Quit menu
     SettingsWindowController.swift / SettingsView.swift -- native settings window
     Assets.xcassets/
@@ -71,7 +71,7 @@ The RPC mechanics in `TransmissionClient.swift` are still a direct port of the o
 - **`NSWindow(contentViewController:)` doesn't reliably size/position itself** -- the Settings window uses the designated `NSWindow(contentRect:styleMask:backing:defer:)` initializer with an explicit frame instead, or it can end up created off-screen/zero-size with no visible error.
 - **`NSApp.delegate as? AppDelegate` is not a reliable way to reach the app delegate from a `MenuBarExtra` view** -- observed as a silent no-op (the cast apparently failing) rather than a crash. `SettingsWindowController` is a plain singleton instead, referenced directly.
 - **SwiftUI's `Settings` scene / `openSettings()` is fragile in `MenuBarExtra`-only apps** (no `WindowGroup`) -- needs hidden decoy windows and timing hacks to work at all in that configuration. Settings is a plain `NSWindowController`-managed `NSWindow` instead.
-- **Local notifications default to a silent "None" alert style** for a newly-permissioned app in System Settings -- `UNUserNotificationCenter` reporting `authorizationStatus = .authorized` doesn't mean a banner will actually show; the per-app Alert Style (System Settings -> Notifications -> Lodestone) needs to be set to Banners or Alerts.
+- **Local notifications default to a silent "None" alert style** for a newly-permissioned app in System Settings -- `UNUserNotificationCenter` reporting `authorizationStatus = .authorized` doesn't mean a banner will actually show; the per-app Alert Style (System Settings -> Notifications -> Lodestone) needs to be set to Banners or Alerts. The Settings window detects both this and an outright denied prompt and says so, with a link to the right pane, since notifications are the app's only output -- without that, either state leaves an app that works perfectly and appears to do nothing.
 
 ## Companion: mintmedia
 

@@ -45,7 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func handleMagnetURL(_ url: URL) {
         Task {
             guard let info = try? MagnetParser.parse(url.absoluteString) else {
-                NotificationFeedback.post(success: false, message: "Not a valid magnet link")
+                await NotificationFeedback.post(success: false, message: "Not a valid magnet link")
                 return
             }
             let config: TransmissionConfig
@@ -53,14 +53,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 config = try TransmissionConfig(
                     host: Preferences.transmissionHost, auth: KeychainStore.load() ?? "")
             } catch {
-                NotificationFeedback.post(success: false, message: TransmissionError.text(for: error))
+                await NotificationFeedback.post(success: false, message: TransmissionError.text(for: error))
                 return
             }
             do {
                 try await TransmissionClient.shared.addMagnet(uri: info.uri, config: config)
-                NotificationFeedback.post(success: true, message: "")
+                await NotificationFeedback.post(success: true, message: "")
             } catch {
-                NotificationFeedback.post(success: false, message: TransmissionError.text(for: error))
+                await NotificationFeedback.post(success: false, message: TransmissionError.text(for: error))
             }
         }
     }
