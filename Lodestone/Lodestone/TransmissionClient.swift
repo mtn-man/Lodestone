@@ -27,14 +27,38 @@ actor TransmissionClient {
 
     private var cachedSessionID: String = ""
 
-    private func rpcCall(
+    // Transmission's RPC envelope, modelled as Codable types rather than
+    // [String: Any]. The dictionaries were the reason: they are not
+    // Sendable, so passing them in and out of this actor is silent under
+    // Swift 5 but a hard error in Swift 6 language mode. Concrete types
+    // also retire the JSONSerialization casts below them.
+
+    private struct Request<Arguments: Encodable & Sendable>: Encodable {
+        let method: String
+        let arguments: Arguments
+    }
+
+    /// Only `result` is read. Transmission also returns an `arguments`
+    /// object, but nothing here consumes it, and decoding a payload we
+    /// ignore would be one more shape to keep in step with the daemon.
+    private struct Response: Decodable {
+        let result: String
+    }
+
+    private struct NoArguments: Encodable, Sendable {}
+
+    private struct TorrentAdd: Encodable, Sendable {
+        let filename: String
+    }
+
+    private func rpcCall<Arguments: Encodable & Sendable>(
         method: String,
-        arguments: [String: Any],
+        arguments: Arguments,
         config: TransmissionConfig,
         timeout: TimeInterval
-    ) async throws -> [String: Any] {
+    ) async throws {
         let url = config.rpcURL
-        let body = try JSONSerialization.data(withJSONObject: ["method": method, "arguments": arguments])
+        let body = try JSONEncoder().encode(Request(method: method, arguments: arguments))
 
         func doFetch(sessionID: String) async throws -> (Data, HTTPURLResponse) {
             var request = URLRequest(url: url)
@@ -67,19 +91,17 @@ actor TransmissionClient {
             throw TransmissionError.message("transmission rpc: unexpected status \(response.statusCode): \(text)")
         }
 
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+        guard let decoded = try? JSONDecoder().decode(Response.self, from: data) else {
             throw TransmissionError.message("transmission rpc \(method): invalid response")
         }
-        guard let result = json["result"] as? String, result == "success" else {
-            let result = (json["result"] as? String) ?? "unknown error"
-            throw TransmissionError.message("transmission rpc \(method): \(result)")
+        guard decoded.result == "success" else {
+            throw TransmissionError.message("transmission rpc \(method): \(decoded.result)")
         }
-        return (json["arguments"] as? [String: Any]) ?? [:]
     }
 
     func addMagnet(uri: String, config: TransmissionConfig, timeout: TimeInterval = TransmissionClient.defaultTimeout) async throws {
         do {
-            _ = try await rpcCall(method: "torrent-add", arguments: ["filename": uri], config: config, timeout: timeout)
+            try await rpcCall(method: "torrent-add", arguments: TorrentAdd(filename: uri), config: config, timeout: timeout)
         } catch {
             throw TransmissionError.message("transmission add failed (host=\(config.host)): \(TransmissionError.text(for: error))")
         }
@@ -87,7 +109,7 @@ actor TransmissionClient {
 
     func testConnection(config: TransmissionConfig, timeout: TimeInterval = TransmissionClient.defaultTimeout) async throws {
         do {
-            _ = try await rpcCall(method: "session-get", arguments: [:], config: config, timeout: timeout)
+            try await rpcCall(method: "session-get", arguments: NoArguments(), config: config, timeout: timeout)
         } catch {
             if let urlError = error as? URLError, urlError.code == .timedOut {
                 throw TransmissionError.message("could not reach transmission at \(config.host): timed out -- try a different address")

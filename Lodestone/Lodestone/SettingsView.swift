@@ -143,6 +143,11 @@ struct SettingsView: View {
         isError = false
         isChecking = true
 
+        // This Task mutates @State directly, which is only safe because the
+        // project sets SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor: the closure
+        // inherits main-actor isolation. Dropping that build setting would
+        // make every assignment here a main-thread violation, so it is not a
+        // tidy-up candidate.
         Task {
             defer { isChecking = false }
 

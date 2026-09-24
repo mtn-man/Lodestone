@@ -33,7 +33,10 @@ private final class NotificationPresenter: NSObject, UNUserNotificationCenterDel
 }
 
 enum NotificationFeedback {
-    private static let center = UNUserNotificationCenter.current()
+    // Fetched per use rather than held in a static. UNUserNotificationCenter
+    // is not Sendable, so a stored instance is a non-Sendable value escaping
+    // the main actor every time an async context touches it -- an error in
+    // Swift 6 language mode. current() is a cheap accessor for a singleton.
     private static let presenter = NotificationPresenter()
 
     /// One-shot authorization request, awaited by every post.
@@ -45,7 +48,7 @@ enum NotificationFeedback {
     /// is added and the confirmation is dropped, on the one run where the
     /// user has no reason yet to trust that it worked.
     private static let authorization = Task<Bool, Never> {
-        (try? await center.requestAuthorization(options: [.alert])) ?? false
+        (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert])) ?? false
     }
 
     /// Installs the presentation delegate and starts the authorization
@@ -53,7 +56,7 @@ enum NotificationFeedback {
     /// has to be in place before launching finishes, and starting the
     /// request there gives it a head start on a magnet that launched the app.
     static func start() {
-        center.delegate = presenter
+        UNUserNotificationCenter.current().delegate = presenter
         _ = authorization
     }
 
@@ -69,7 +72,7 @@ enum NotificationFeedback {
         content.body = success ? "Added magnet to Transmission" : message
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
         do {
-            try await center.add(request)
+            try await UNUserNotificationCenter.current().add(request)
         } catch {
             NSLog("Lodestone: failed to post notification: %@", String(describing: error))
         }
@@ -78,7 +81,7 @@ enum NotificationFeedback {
     /// nil when feedback will be delivered. Otherwise a sentence for the
     /// Settings window explaining why it won't be.
     static func unavailableReason() async -> String? {
-        let settings = await center.notificationSettings()
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
         switch settings.authorizationStatus {
         case .denied:
             return "Notifications are turned off, so magnets are added silently."
