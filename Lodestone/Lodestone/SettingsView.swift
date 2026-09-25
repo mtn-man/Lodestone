@@ -55,8 +55,8 @@ struct SettingsView: View {
         Form {
             Section {
                 TextField("Host", text: $host, prompt: Text("192.168.1.50:9091"))
-                TextField("Username", text: $username, prompt: Text("Optional"))
-                SecureField("Password", text: $password, prompt: Text("Optional"))
+                TextField("Username", text: $username, prompt: Text("optional"))
+                SecureField("Password", text: $password, prompt: Text("optional"))
             } header: {
                 Text("Transmission Server")
             } footer: {
