@@ -26,6 +26,19 @@ struct SettingsView: View {
     /// is configured. Derived from the saved host rather than tracked as a
     /// second copy of it, so the link is shown exactly when it resolves.
     @State private var savedWebURL: URL? = Preferences.transmissionWebURL
+    /// Result of "Check Connection", kept separate from `status`/`isChecking`
+    /// above -- those describe the Save flow (which tests the form fields
+    /// before persisting them), this describes a check against the config
+    /// that's actually persisted and in use for magnet adds. Deliberately
+    /// not run automatically on window appear: opening Settings is far more
+    /// frequent than wanting to know the daemon's reachability, so an
+    /// explicit button avoids a network round-trip on every open.
+    @State private var isCheckingConnection = false
+    @State private var connectionCheckResult: String?
+    @State private var connectionCheckIsError = false
+    /// Identifies the check whose auto-clear timer is currently pending, so
+    /// a stale timer from an earlier check can't wipe out a newer result.
+    @State private var connectionCheckToken = UUID()
     /// Set only when notification feedback won't be visible. Notifications
     /// are the app's only output, so that state otherwise leaves a working
     /// app that appears to do nothing, with no hint as to why.
@@ -57,15 +70,9 @@ struct SettingsView: View {
                 TextField("Host", text: $host, prompt: Text("192.168.1.50:9091"))
                 TextField("Username", text: $username, prompt: Text("optional"))
                 SecureField("Password", text: $password, prompt: Text("optional"))
-            } header: {
-                Text("Transmission Server")
-            } footer: {
-                Text("Magnet links you click are sent here instead of opening in a local torrent app.")
-                    .foregroundStyle(.secondary)
-            }
 
-            Section {
                 HStack(spacing: 8) {
+                    Spacer()
                     Button("Save", action: save)
                         .keyboardShortcut(.defaultAction)
                         .disabled(isChecking || host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -87,6 +94,28 @@ struct SettingsView: View {
                     Link(destination: savedWebURL) {
                         Label("Open Transmission Web Portal", systemImage: "arrow.up.forward.app")
                     }
+                }
+            } header: {
+                Text("Transmission Server")
+            } footer: {
+                Text("Magnet links you click are sent here instead of opening in a local torrent app.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                HStack(spacing: 8) {
+                    Button("Check Connection", action: checkConnection)
+                        .disabled(isCheckingConnection)
+                    if isCheckingConnection {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else if let connectionCheckResult {
+                        Text(connectionCheckResult)
+                            .font(.callout)
+                            .foregroundStyle(connectionCheckIsError ? Color.red : Color.green)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer()
                 }
             }
 
@@ -180,6 +209,58 @@ struct SettingsView: View {
             savedWebURL = config.webURL
             status = "Saved."
             isError = false
+        }
+    }
+
+    /// Tests the persisted config -- Preferences.transmissionHost plus the
+    /// saved Keychain credential -- not the (possibly unsaved) form fields
+    /// above, which is what "Save" tests instead.
+    private func checkConnection() {
+        isCheckingConnection = true
+        connectionCheckResult = nil
+
+        Task {
+            defer { isCheckingConnection = false }
+
+            let host = Preferences.transmissionHost
+            guard !host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                showConnectionResult("No server configured", isError: true)
+                return
+            }
+
+            let auth = (try? KeychainStore.load()) ?? ""
+            let config: TransmissionConfig
+            do {
+                config = try TransmissionConfig(host: host, auth: auth)
+            } catch {
+                showConnectionResult(error.localizedDescription, isError: true)
+                return
+            }
+
+            do {
+                try await TransmissionClient.shared.testConnection(config: config)
+                showConnectionResult("Connected", isError: false)
+            } catch {
+                showConnectionResult(error.localizedDescription, isError: true)
+            }
+        }
+    }
+
+    /// Shows a "Check Connection" result and clears it a few seconds later,
+    /// so a stale "Connected" can't keep sitting there after the daemon
+    /// becomes unreachable. Guarded by a token so a slower, earlier check's
+    /// timer can't clear a result a newer check just set.
+    private func showConnectionResult(_ text: String, isError: Bool) {
+        let token = UUID()
+        connectionCheckToken = token
+        connectionCheckResult = text
+        connectionCheckIsError = isError
+
+        Task {
+            try? await Task.sleep(for: .seconds(5))
+            if connectionCheckToken == token {
+                connectionCheckResult = nil
+            }
         }
     }
 }
