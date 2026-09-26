@@ -90,11 +90,6 @@ struct SettingsView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                if let savedWebURL {
-                    Link(destination: savedWebURL) {
-                        Label("Open Transmission Web Portal", systemImage: "arrow.up.forward.app")
-                    }
-                }
             } header: {
                 Text("Transmission Server")
             } footer: {
@@ -117,6 +112,20 @@ struct SettingsView: View {
                     }
                     Spacer()
                 }
+            }
+
+            if let savedWebURL {
+                Section {
+                    HStack {
+                        Spacer()
+                        Link(destination: savedWebURL) {
+                            Label("Open Transmission Web Portal", systemImage: "arrow.up.forward.app")
+                        }
+                        Spacer()
+                    }
+                }
+                .padding(.top, 16)
+                .padding(.bottom, 16)
             }
 
             if let notificationWarning {
