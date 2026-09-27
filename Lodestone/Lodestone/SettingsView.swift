@@ -22,6 +22,11 @@ struct SettingsView: View {
     @State private var status: String
     @State private var isError: Bool
     @State private var isChecking: Bool = false
+    /// Identifies the terminal save status ("Saved." or an error) whose
+    /// auto-clear timer is currently pending, so a stale timer can't wipe
+    /// out a newer status. Not set for the transient "Checking connection…"
+    /// status, which is always superseded by a terminal one.
+    @State private var statusToken = UUID()
     /// The web-portal URL for the currently persisted host, or nil if none
     /// is configured. Derived from the saved host rather than tracked as a
     /// second copy of it, so the link is shown exactly when it resolves.
@@ -86,7 +91,7 @@ struct SettingsView: View {
                 if !status.isEmpty {
                     Text(status)
                         .font(.callout)
-                        .foregroundStyle(isError ? Color.red : Color.secondary)
+                        .foregroundStyle(isError ? Color.red : (isChecking ? Color.secondary : Color.green))
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -101,6 +106,7 @@ struct SettingsView: View {
                 HStack(spacing: 8) {
                     Button("Check Connection", action: checkConnection)
                         .disabled(isCheckingConnection)
+                    Spacer()
                     if isCheckingConnection {
                         ProgressView()
                             .controlSize(.small)
@@ -110,7 +116,6 @@ struct SettingsView: View {
                             .foregroundStyle(connectionCheckIsError ? Color.red : Color.green)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    Spacer()
                 }
             }
 
@@ -178,11 +183,11 @@ struct SettingsView: View {
         do {
             config = try TransmissionConfig(host: host, auth: auth)
         } catch {
-            status = error.localizedDescription
-            isError = true
+            showStatus(error.localizedDescription, isError: true)
             return
         }
 
+        statusToken = UUID()
         status = "Checking connection…"
         isError = false
         isChecking = true
@@ -198,8 +203,7 @@ struct SettingsView: View {
             do {
                 try await TransmissionClient.shared.testConnection(config: config)
             } catch {
-                status = error.localizedDescription
-                isError = true
+                showStatus(error.localizedDescription, isError: true)
                 return
             }
 
@@ -209,15 +213,31 @@ struct SettingsView: View {
             do {
                 try KeychainStore.save(auth)
             } catch {
-                status = "Connected, but \(error.localizedDescription)"
-                isError = true
+                showStatus("Connected, but \(error.localizedDescription)", isError: true)
                 return
             }
 
             Preferences.transmissionHost = host
             savedWebURL = config.webURL
-            status = "Saved."
-            isError = false
+            showStatus("Saved.", isError: false)
+        }
+    }
+
+    /// Shows a terminal save status ("Saved." or an error) and clears it a
+    /// few seconds later, mirroring `showConnectionResult`. Guarded by a
+    /// token so a slower, earlier save's timer can't clear a status a newer
+    /// save just set.
+    private func showStatus(_ text: String, isError: Bool) {
+        let token = UUID()
+        statusToken = token
+        status = text
+        self.isError = isError
+
+        Task {
+            try? await Task.sleep(for: .seconds(5))
+            if statusToken == token {
+                status = ""
+            }
         }
     }
 
