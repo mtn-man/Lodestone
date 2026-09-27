@@ -203,7 +203,7 @@ struct SettingsView: View {
                 return
             }
 
-            Preferences.transmissionHost = host
+            Preferences.transmissionHost = config.host
             savedWebURL = config.webURL
             saveStatus.show("Saved.", isError: false)
         }
