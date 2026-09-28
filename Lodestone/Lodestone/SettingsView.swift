@@ -224,7 +224,14 @@ struct SettingsView: View {
                 return
             }
 
-            let auth = (try? KeychainStore.load()) ?? ""
+            let auth: String
+            do {
+                auth = try KeychainStore.load() ?? ""
+            } catch {
+                connectionStatus.show(error.localizedDescription, isError: true)
+                return
+            }
+
             let config: TransmissionConfig
             do {
                 config = try TransmissionConfig(host: host, auth: auth)
