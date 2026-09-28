@@ -55,19 +55,34 @@ enum KeychainStore {
 
     /// Replaces the stored credential. An empty value clears it, which is a
     /// legitimate state -- Transmission allows unauthenticated RPC.
+    ///
+    /// Updates the existing item in place rather than deleting and
+    /// re-adding: a failed `SecItemAdd` after a successful delete would
+    /// otherwise leave no credential at all, silently losing a previously
+    /// valid one. `SecItemUpdate` fails atomically, so a failure here
+    /// leaves the old credential intact.
     static func save(_ value: String) throws {
-        let deleteStatus = SecItemDelete(baseQuery as CFDictionary)
-        guard deleteStatus == errSecSuccess || deleteStatus == errSecItemNotFound else {
-            throw KeychainError.deleteFailed(deleteStatus)
+        guard !value.isEmpty else {
+            let deleteStatus = SecItemDelete(baseQuery as CFDictionary)
+            guard deleteStatus == errSecSuccess || deleteStatus == errSecItemNotFound else {
+                throw KeychainError.deleteFailed(deleteStatus)
+            }
+            return
         }
 
-        guard !value.isEmpty else { return }
-
-        var attributes = baseQuery
-        attributes[kSecValueData as String] = Data(value.utf8)
-        let addStatus = SecItemAdd(attributes as CFDictionary, nil)
-        guard addStatus == errSecSuccess else {
-            throw KeychainError.saveFailed(addStatus)
+        let newData: [String: Any] = [kSecValueData as String: Data(value.utf8)]
+        let updateStatus = SecItemUpdate(baseQuery as CFDictionary, newData as CFDictionary)
+        if updateStatus == errSecItemNotFound {
+            var attributes = baseQuery
+            attributes[kSecValueData as String] = Data(value.utf8)
+            let addStatus = SecItemAdd(attributes as CFDictionary, nil)
+            guard addStatus == errSecSuccess else {
+                throw KeychainError.saveFailed(addStatus)
+            }
+            return
+        }
+        guard updateStatus == errSecSuccess else {
+            throw KeychainError.saveFailed(updateStatus)
         }
     }
 
