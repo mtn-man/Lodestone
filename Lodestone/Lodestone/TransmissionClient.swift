@@ -20,7 +20,14 @@ actor TransmissionClient {
     static let shared = TransmissionClient()
     static let defaultTimeout: TimeInterval = 10
 
-    private var cachedSessionID: String = ""
+    // Keyed by host rather than a single value: Lodestone reconstructs
+    // TransmissionConfig fresh on every call (from Preferences + Keychain),
+    // so a bare cached ID would carry the previous host's session ID into
+    // the first request against a newly-configured one -- harmless (a
+    // stale ID just gets rejected with a 409 and retried) but avoidable.
+    // Unbounded growth isn't a concern: this is a personal, single-user
+    // app with at most a handful of hosts ever configured in its lifetime.
+    private var cachedSessionIDs: [String: String] = [:]
 
     // Transmission's RPC envelope, modelled as Codable types rather than
     // [String: Any]. The dictionaries were the reason: they are not
@@ -74,10 +81,11 @@ actor TransmissionClient {
             return (data, http)
         }
 
-        var (data, response) = try await doFetch(sessionID: cachedSessionID)
+        var (data, response) = try await doFetch(sessionID: cachedSessionIDs[config.host] ?? "")
         if response.statusCode == 409 {
-            cachedSessionID = response.value(forHTTPHeaderField: "X-Transmission-Session-Id") ?? ""
-            (data, response) = try await doFetch(sessionID: cachedSessionID)
+            let sessionID = response.value(forHTTPHeaderField: "X-Transmission-Session-Id") ?? ""
+            cachedSessionIDs[config.host] = sessionID
+            (data, response) = try await doFetch(sessionID: sessionID)
         }
 
         guard response.statusCode == 200 else {
