@@ -16,12 +16,12 @@
 	<!--
 		NSAllowsArbitraryLoads is intentional, not an oversight. Transmission's
 		RPC endpoint is unencrypted, user-configured http:// and can live
-		anywhere -- LAN, .local, Tailscale, localhost -- so ATS's narrower
+		anywhere - LAN, .local, Tailscale, localhost - so ATS's narrower
 		exceptions (NSAllowsLocalNetworking, NSExceptionDomains) can't express
 		the policy: the former misses CGNAT/Tailscale ranges, the latter needs
 		a domain known at build time. TransmissionConfig.allowsCleartext
 		enforces the real boundary instead, at the host the user actually
-		typed -- see that function for the exact set of hosts cleartext is
+		typed - see that function for the exact set of hosts cleartext is
 		allowed to. This comment deliberately doesn't re-list them: that list
 		has already drifted out of sync with the code once, and one source of
 		truth beats two that can disagree. See README "Gotchas" and CLAUDE.md
