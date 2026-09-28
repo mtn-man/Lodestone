@@ -16,9 +16,32 @@ enum TransmissionError: Error, LocalizedError {
     }
 }
 
+/// The seam tests substitute to script responses instead of hitting a real
+/// daemon. `URLSessionTransport` is the only production implementation;
+/// everything else in this file is agnostic to which one it's talking to.
+protocol TransmissionTransport: Sendable {
+    func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse)
+}
+
+struct URLSessionTransport: TransmissionTransport {
+    func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw TransmissionError.message("transmission rpc: no HTTP response")
+        }
+        return (data, http)
+    }
+}
+
 actor TransmissionClient {
     static let shared = TransmissionClient()
     static let defaultTimeout: TimeInterval = 10
+
+    private let transport: TransmissionTransport
+
+    init(transport: TransmissionTransport = URLSessionTransport()) {
+        self.transport = transport
+    }
 
     // Keyed by host rather than a single value: Lodestone reconstructs
     // TransmissionConfig fresh on every call (from Preferences + Keychain),
@@ -74,11 +97,7 @@ actor TransmissionClient {
                 request.setValue(authHeader, forHTTPHeaderField: "Authorization")
             }
             request.httpBody = body
-            let (data, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse else {
-                throw TransmissionError.message("transmission rpc: no HTTP response")
-            }
-            return (data, http)
+            return try await transport.send(request)
         }
 
         var (data, response) = try await doFetch(sessionID: cachedSessionIDs[config.host] ?? "")

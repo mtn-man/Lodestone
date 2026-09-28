@@ -16,6 +16,7 @@
 		CEFB63C330647C9E00D0169D /* TransmissionConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB63C030647C9E00D0169D /* TransmissionConfig.swift */; };
 		CEFB63C430647C9E00D0169D /* TransmissionClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB639430647C9E00D0169D /* TransmissionClient.swift */; };
 		CEFB63C530647C9E00D0169D /* TransmissionConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB63C130647C9E00D0169D /* TransmissionConfigTests.swift */; };
+		CEFB63D130647C9E00D0169D /* TransmissionClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB63D030647C9E00D0169D /* TransmissionClientTests.swift */; };
 		CEFB639730647C9E00D0169D /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB639630647C9E00D0169D /* Preferences.swift */; };
 		CEFB639930647C9E00D0169D /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB639830647C9E00D0169D /* KeychainStore.swift */; };
 		CEFB639B30647C9E00D0169D /* NotificationFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB639A30647C9E00D0169D /* NotificationFeedback.swift */; };
@@ -35,6 +36,7 @@
 		CEFB639430647C9E00D0169D /* TransmissionClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransmissionClient.swift; sourceTree = "<group>"; };
 		CEFB63C030647C9E00D0169D /* TransmissionConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransmissionConfig.swift; sourceTree = "<group>"; };
 		CEFB63C130647C9E00D0169D /* TransmissionConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransmissionConfigTests.swift; sourceTree = "<group>"; };
+		CEFB63D030647C9E00D0169D /* TransmissionClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransmissionClientTests.swift; sourceTree = "<group>"; };
 		CEFB639630647C9E00D0169D /* Preferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
 		CEFB639830647C9E00D0169D /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		CEFB639A30647C9E00D0169D /* NotificationFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationFeedback.swift; sourceTree = "<group>"; };
@@ -100,6 +102,7 @@
 			children = (
 				CEFB63B130647C9E00D0169D /* MagnetParserTests.swift */,
 				CEFB63C130647C9E00D0169D /* TransmissionConfigTests.swift */,
+				CEFB63D030647C9E00D0169D /* TransmissionClientTests.swift */,
 			);
 			path = LodestoneTests;
 			sourceTree = "<group>";
@@ -211,6 +214,7 @@
 				CEFB63C530647C9E00D0169D /* TransmissionConfigTests.swift in Sources */,
 				CEFB63C330647C9E00D0169D /* TransmissionConfig.swift in Sources */,
 				CEFB63C430647C9E00D0169D /* TransmissionClient.swift in Sources */,
+				CEFB63D130647C9E00D0169D /* TransmissionClientTests.swift in Sources */,
 			);
 		};
 /* End PBXSourcesBuildPhase section */
