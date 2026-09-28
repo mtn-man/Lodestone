@@ -11,7 +11,7 @@ Personal tool, no App Store distribution -- self-signed locally via a free Apple
 
 ## Build
 
-Open `Lodestone/Lodestone.xcodeproj` in Xcode, confirm the signing team on the `Lodestone` target is set to your free-tier team, signing certificate **Development** (not "Sign to Run Locally" -- ad-hoc signing breaks local network access). Cmd+R to build and run -- a small icon appears in the menu bar, no Dock icon. Command-line builds also work: `xcodebuild -project Lodestone/Lodestone.xcodeproj -scheme Lodestone -configuration Debug build`.
+Open `Lodestone/Lodestone.xcodeproj` in Xcode, confirm the signing team on the `Lodestone` target is set to your free-tier team, signing certificate **Development** -- not "Sign to Run Locally": its ad-hoc signature has no stable identity, so macOS's Local Network permission grant doesn't survive a rebuild, and Transmission's RPC endpoint is exactly the kind of LAN connection that gate covers. Cmd+R to build and run -- a small icon appears in the menu bar, no Dock icon. Command-line builds also work: `xcodebuild -project Lodestone/Lodestone.xcodeproj -scheme Lodestone -configuration Debug build`.
 
 First launch registers Lodestone as the default `magnet:` URL handler automatically (re-asserted on every launch, since other installed apps -- e.g. Transmission.app itself -- can also claim the scheme and there's no System Settings picker for custom URL schemes the way there is for browsers/mail).
 

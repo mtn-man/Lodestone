@@ -21,9 +21,11 @@
 		the policy: the former misses CGNAT/Tailscale ranges, the latter needs
 		a domain known at build time. TransmissionConfig.allowsCleartext
 		enforces the real boundary instead, at the host the user actually
-		typed: only loopback/RFC1918/CGNAT/link-local/.local/.ts.net hosts may
-		use http://, everything else must be https://. See README "Gotchas"
-		and CLAUDE.md for the full rationale.
+		typed -- see that function for the exact set of hosts cleartext is
+		allowed to. This comment deliberately doesn't re-list them: that list
+		has already drifted out of sync with the code once, and one source of
+		truth beats two that can disagree. See README "Gotchas" and CLAUDE.md
+		for the full rationale.
 	-->
 	<key>NSAppTransportSecurity</key>
 	<dict>
