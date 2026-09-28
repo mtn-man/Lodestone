@@ -13,6 +13,18 @@
 			</array>
 		</dict>
 	</array>
+	<!--
+		NSAllowsArbitraryLoads is intentional, not an oversight. Transmission's
+		RPC endpoint is unencrypted, user-configured http:// and can live
+		anywhere -- LAN, .local, Tailscale, localhost -- so ATS's narrower
+		exceptions (NSAllowsLocalNetworking, NSExceptionDomains) can't express
+		the policy: the former misses CGNAT/Tailscale ranges, the latter needs
+		a domain known at build time. TransmissionConfig.allowsCleartext
+		enforces the real boundary instead, at the host the user actually
+		typed: only loopback/RFC1918/CGNAT/link-local/.local/.ts.net hosts may
+		use http://, everything else must be https://. See README "Gotchas"
+		and CLAUDE.md for the full rationale.
+	-->
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

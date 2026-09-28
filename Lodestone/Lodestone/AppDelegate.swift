@@ -33,7 +33,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // and reports failure by throwing rather than by an OSStatus -- the
     // failure worth recognizing in the log is still the sandbox one
     // (formerly -54 / permErr), since no entitlement permits a sandboxed app
-    // to mutate the system-wide default-handler database (see README).
+    // to mutate the system-wide default-handler database (see README). This
+    // is why ENABLE_APP_SANDBOX = NO in the target's build settings is
+    // deliberate, not an oversight -- re-enabling it breaks this call.
     private func claimMagnetHandler() {
         Task {
             do {
